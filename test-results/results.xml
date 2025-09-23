@@ -1,0 +1,327 @@
+<testsuites id="" name="" tests="8" failures="8" skipped="0" errors="0" time="44.288849">
+<testsuite name="dark-mode.spec.ts" timestamp="2025-09-23T06:00:00.749Z" hostname="chromium" tests="3" failures="3" skipped="0" time="94.307" errors="0">
+<testcase name="Dark Mode Functionality › should respect system dark mode preference" classname="dark-mode.spec.ts" time="30.619">
+<failure message="dark-mode.spec.ts:4:3 should respect system dark mode preference" type="FAILURE">
+<![CDATA[  [chromium] › dark-mode.spec.ts:4:3 › Dark Mode Functionality › should respect system dark mode preference 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('[class*="dark:bg-gray-900"]').first()
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[class*="dark:bg-gray-900"]').first()
+
+
+      12 |
+      13 |     // Verify dark mode is active by checking computed styles
+    > 14 |     await expect(mainContainer).toBeVisible()
+         |                                 ^
+      15 |   })
+      16 |
+      17 |   test('should respect system light mode preference', async ({ page }) => {
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\dark-mode.spec.ts:14:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\dark-mode-Dark-Mode-Functi-2dcd0-system-dark-mode-preference-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\dark-mode-Dark-Mode-Functi-2dcd0-system-dark-mode-preference-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|dark-mode-Dark-Mode-Functi-2dcd0-system-dark-mode-preference-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|dark-mode-Dark-Mode-Functi-2dcd0-system-dark-mode-preference-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Dark Mode Functionality › should respect system light mode preference" classname="dark-mode.spec.ts" time="30.573">
+<failure message="dark-mode.spec.ts:17:3 should respect system light mode preference" type="FAILURE">
+<![CDATA[  [chromium] › dark-mode.spec.ts:17:3 › Dark Mode Functionality › should respect system light mode preference 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('[class*="bg-gray-50"]').first()
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[class*="bg-gray-50"]').first()
+
+
+      22 |     // Check if light mode classes are applied
+      23 |     const mainContainer = page.locator('[class*="bg-gray-50"]').first()
+    > 24 |     await expect(mainContainer).toBeVisible()
+         |                                 ^
+      25 |   })
+      26 |
+      27 |   test('should maintain functionality in dark mode', async ({ page }) => {
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\dark-mode.spec.ts:24:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\dark-mode-Dark-Mode-Functi-6984d-ystem-light-mode-preference-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\dark-mode-Dark-Mode-Functi-6984d-ystem-light-mode-preference-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|dark-mode-Dark-Mode-Functi-6984d-ystem-light-mode-preference-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|dark-mode-Dark-Mode-Functi-6984d-ystem-light-mode-preference-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Dark Mode Functionality › should maintain functionality in dark mode" classname="dark-mode.spec.ts" time="33.115">
+<failure message="dark-mode.spec.ts:27:3 should maintain functionality in dark mode" type="FAILURE">
+<![CDATA[  [chromium] › dark-mode.spec.ts:27:3 › Dark Mode Functionality › should maintain functionality in dark mode 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder('Enter a name...')
+
+
+      33 |     const greetButton = page.getByRole('button', { name: 'Greet' })
+      34 |
+    > 35 |     await nameInput.fill('Dark Mode User')
+         |                     ^
+      36 |     await greetButton.click()
+      37 |
+      38 |     await expect(
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\dark-mode.spec.ts:35:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\dark-mode-Dark-Mode-Functi-f8c84--functionality-in-dark-mode-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\dark-mode-Dark-Mode-Functi-f8c84--functionality-in-dark-mode-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|dark-mode-Dark-Mode-Functi-f8c84--functionality-in-dark-mode-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|dark-mode-Dark-Mode-Functi-f8c84--functionality-in-dark-mode-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="example.spec.ts" timestamp="2025-09-23T06:00:00.749Z" hostname="chromium" tests="5" failures="5" skipped="0" time="158.022" errors="0">
+<testcase name="Tauri App Basic Functionality › should load the main page" classname="example.spec.ts" time="30.552">
+<failure message="example.spec.ts:4:3 should load the main page" type="FAILURE">
+<![CDATA[  [chromium] › example.spec.ts:4:3 › Tauri App Basic Functionality › should load the main page ─────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByRole('heading', { name: 'Welcome to Tauri + React' })
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Welcome to Tauri + React' })
+
+
+       8 |     await expect(
+       9 |       page.getByRole('heading', { name: 'Welcome to Tauri + React' })
+    > 10 |     ).toBeVisible()
+         |       ^
+      11 |
+      12 |     // Check if all logo links are present
+      13 |     await expect(
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\example.spec.ts:10:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-9ff3b-y-should-load-the-main-page-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-9ff3b-y-should-load-the-main-page-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-9ff3b-y-should-load-the-main-page-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-9ff3b-y-should-load-the-main-page-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Tauri App Basic Functionality › should have a functioning greet form" classname="example.spec.ts" time="33.117">
+<failure message="example.spec.ts:24:3 should have a functioning greet form" type="FAILURE">
+<![CDATA[  [chromium] › example.spec.ts:24:3 › Tauri App Basic Functionality › should have a functioning greet form 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder('Enter a name...')
+
+
+      30 |
+      31 |     // Test the greet functionality
+    > 32 |     await nameInput.fill('Playwright')
+         |                     ^
+      33 |     await greetButton.click()
+      34 |
+      35 |     // Wait for the greeting message to appear
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\example.spec.ts:32:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-cd3ac-ve-a-functioning-greet-form-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-cd3ac-ve-a-functioning-greet-form-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-cd3ac-ve-a-functioning-greet-form-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-cd3ac-ve-a-functioning-greet-form-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Tauri App Basic Functionality › should have responsive design" classname="example.spec.ts" time="30.619">
+<failure message="example.spec.ts:41:3 should have responsive design" type="FAILURE">
+<![CDATA[  [chromium] › example.spec.ts:41:3 › Tauri App Basic Functionality › should have responsive design 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByRole('heading', { name: 'Welcome to Tauri + React' })
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Welcome to Tauri + React' })
+
+
+      46 |     await expect(
+      47 |       page.getByRole('heading', { name: 'Welcome to Tauri + React' })
+    > 48 |     ).toBeVisible()
+         |       ^
+      49 |
+      50 |     // Test tablet viewport
+      51 |     await page.setViewportSize({ width: 768, height: 1024 })
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\example.spec.ts:48:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-97942-ould-have-responsive-design-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-97942-ould-have-responsive-design-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-97942-ould-have-responsive-design-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-97942-ould-have-responsive-design-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Tauri App Basic Functionality › should handle empty greet input gracefully" classname="example.spec.ts" time="33.115">
+<failure message="example.spec.ts:63:3 should handle empty greet input gracefully" type="FAILURE">
+<![CDATA[  [chromium] › example.spec.ts:63:3 › Tauri App Basic Functionality › should handle empty greet input gracefully 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Greet' })
+
+
+      65 |
+      66 |     const greetButton = page.getByRole('button', { name: 'Greet' })
+    > 67 |     await greetButton.click()
+         |                       ^
+      68 |
+      69 |     // Should greet with empty name
+      70 |     await expect(
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\example.spec.ts:67:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-896ab-mpty-greet-input-gracefully-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-896ab-mpty-greet-input-gracefully-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-896ab-mpty-greet-input-gracefully-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-896ab-mpty-greet-input-gracefully-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Tauri App Basic Functionality › should have proper accessibility attributes" classname="example.spec.ts" time="30.619">
+<failure message="example.spec.ts:75:3 should have proper accessibility attributes" type="FAILURE">
+<![CDATA[  [chromium] › example.spec.ts:75:3 › Tauri App Basic Functionality › should have proper accessibility attributes 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByRole('heading', { name: 'Welcome to Tauri + React' })
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Welcome to Tauri + React' })
+
+
+      80 |       name: 'Welcome to Tauri + React',
+      81 |     })
+    > 82 |     await expect(heading).toBeVisible()
+         |                           ^
+      83 |
+      84 |     // Check for proper form labels and accessibility
+      85 |     const nameInput = page.getByPlaceholder('Enter a name...')
+        at C:\Users\Tavuc\Documents\Workspace\Rust\tauri-boilerplate\tavuc-boilerplate\tests\e2e\example.spec.ts:82:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-715ca-er-accessibility-attributes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\example-Tauri-App-Basic-Fu-715ca-er-accessibility-attributes-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-715ca-er-accessibility-attributes-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|example-Tauri-App-Basic-Fu-715ca-er-accessibility-attributes-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

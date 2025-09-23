@@ -1,0 +1,105 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  update-npm-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Update npm dependencies
+      run: |
+        npm update
+        npm audit fix --force || true
+
+    - name: Check for changes
+      id: changes
+      run: |
+        if git diff --quiet package-lock.json; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Pull Request
+      if: steps.changes.outputs.has_changes == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore(deps): update npm dependencies'
+        title: 'chore(deps): update npm dependencies'
+        body: |
+          This PR updates npm dependencies to their latest versions.
+
+          ## Changes
+          - Updated package-lock.json with latest dependency versions
+          - Applied security fixes where available
+
+          Please review the changes and ensure all tests pass before merging.
+        branch: chore/update-npm-dependencies
+        delete-branch: true
+
+  update-cargo-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install cargo-edit
+      run: cargo install cargo-edit
+
+    - name: Update Cargo dependencies
+      run: |
+        cd src-tauri
+        cargo upgrade
+        cargo update
+
+    - name: Check for changes
+      id: changes
+      run: |
+        if git diff --quiet src-tauri/Cargo.lock src-tauri/Cargo.toml; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Test build after updates
+      if: steps.changes.outputs.has_changes == 'true'
+      run: |
+        cd src-tauri
+        cargo check
+
+    - name: Create Pull Request
+      if: steps.changes.outputs.has_changes == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore(deps): update Cargo dependencies'
+        title: 'chore(deps): update Cargo dependencies'
+        body: |
+          This PR updates Rust/Cargo dependencies to their latest versions.
+
+          ## Changes
+          - Updated Cargo.toml with latest dependency versions
+          - Updated Cargo.lock file
+
+          The build has been tested and passes successfully.
+        branch: chore/update-cargo-dependencies
+        delete-branch: true
