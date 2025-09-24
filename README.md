@@ -406,17 +406,11 @@ test('renders button with text', () => {
 
 ### E2E Tests
 
-Test complete user workflows:
+Test desktop application workflows using WebDriverIO:
 
-```typescript
-// tests/e2e/app.spec.ts
-import { test, expect } from '@playwright/test'
-
-test('user can navigate to settings', async ({ page }) => {
-  await page.goto('/')
-  await page.click('text=Settings')
-  await expect(page).toHaveURL('/settings')
-})
+```bash
+# Run desktop e2e tests
+npm run test:desktop
 ```
 
 ## 🚀 Deployment
@@ -489,7 +483,10 @@ cd src-tauri && cargo audit
 
 ### API Reference
 
-Detailed API documentation is available in the `/docs` folder (coming soon).
+For detailed API documentation and contribution guidelines, see:
+
+- [CONTRIBUTING.md](.github/CONTRIBUTING.md) - Development and contribution guide
+- [CHANGELOG.md](CHANGELOG.md) - Release notes and version history
 
 ## 🐛 Troubleshooting
 

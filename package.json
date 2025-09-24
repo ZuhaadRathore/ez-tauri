@@ -31,15 +31,19 @@
     "tauri:test:build": "npm run build && cargo build --manifest-path src-tauri/Cargo.toml",
     "test:desktop": "npm run tauri:test:build && wdio run wdio.config.ts",
     "test:desktop:watch": "WDIO_LOG_LEVEL=silent wdio run wdio.config.ts --watch",
-    "test:e2e": "npm run test:desktop"
+    "test:e2e": "npm run test:desktop",
+    "changelog": "node scripts/generate-changelog.mjs",
+    "changelog:check": "node scripts/generate-changelog.mjs --check",
+    "release:prepare": "npm run changelog && git add CHANGELOG.md",
+    "version:patch": "npm version patch && npm run release:prepare",
+    "version:minor": "npm version minor && npm run release:prepare",
+    "version:major": "npm version major && npm run release:prepare"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.63.0",
     "react-router-dom": "^7.9.1",
     "zod": "^4.1.11",
     "zustand": "^5.0.8"

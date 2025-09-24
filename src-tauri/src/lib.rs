@@ -36,7 +36,7 @@ pub fn run() {
                     tracing::info!("Database initialized successfully");
 
                     if let Ok(pool) = database::get_pool_ref() {
-                        if let Err(e) = database::migrations::run_migrations(pool).await {
+                        if let Err(e) = database::migrations::run_migrations(pool.as_ref()).await {
                             tracing::error!("Failed to run migrations: {}", e);
                         } else {
                             tracing::info!("Migrations completed successfully");

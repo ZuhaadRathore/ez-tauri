@@ -4,6 +4,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[allow(dead_code)]
 pub struct UserSettings {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -16,6 +17,7 @@ pub struct UserSettings {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct CreateUserSettings {
     pub user_id: Uuid,
     pub theme: Option<String>,
@@ -25,6 +27,7 @@ pub struct CreateUserSettings {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct UpdateUserSettings {
     pub theme: Option<String>,
     pub language: Option<String>,
@@ -33,6 +36,7 @@ pub struct UpdateUserSettings {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct AppSettings {
     pub sidebar_collapsed: Option<bool>,
     pub auto_save: Option<bool>,

@@ -268,3 +268,94 @@ pub async fn get_app_log_dir(app: AppHandle) -> Result<String, String> {
 
     Ok(app_log_dir.to_string_lossy().to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn get_system_info_returns_valid_data() {
+        let result = get_system_info().await.expect("system info should be available");
+
+        assert!(!result.platform.is_empty());
+        assert!(!result.arch.is_empty());
+        assert!(!result.hostname.is_empty());
+        assert_eq!(result.version, "Unknown");
+    }
+
+    #[tokio::test]
+    async fn execute_command_rejects_empty_command() {
+        let result = execute_command("".to_string(), vec![]).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("cannot be empty"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_rejects_unauthorized_commands() {
+        let result = execute_command("rm".to_string(), vec!["-rf".to_string(), "/".to_string()]).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not permitted"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_rejects_commands_with_paths() {
+        let result = execute_command("./malicious".to_string(), vec![]).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalid characters"));
+
+        let result = execute_command("/usr/bin/rm".to_string(), vec![]).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalid characters"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_rejects_too_many_args() {
+        let many_args: Vec<String> = (0..25).map(|i| format!("arg{}", i)).collect();
+        let result = execute_command("echo".to_string(), many_args).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Too many arguments"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_rejects_oversized_args() {
+        let oversized_arg = "x".repeat(3000);
+        let result = execute_command("echo".to_string(), vec![oversized_arg]).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("exceeds the maximum length"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_rejects_null_bytes() {
+        let result = execute_command("echo".to_string(), vec!["hello\0world".to_string()]).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalid characters"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_works_with_allowed_commands() {
+        let result = execute_command("echo".to_string(), vec!["hello".to_string()]).await;
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.contains("hello") || output.contains("executed successfully"));
+    }
+
+    #[tokio::test]
+    async fn execute_command_handles_case_insensitive_matching() {
+        let result = execute_command("ECHO".to_string(), vec!["test".to_string()]).await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn allowed_commands_list_is_not_empty() {
+        assert!(!ALLOWED_COMMANDS.is_empty());
+        assert!(ALLOWED_COMMANDS.contains(&"echo"));
+        assert!(ALLOWED_COMMANDS.contains(&"npm"));
+        assert!(ALLOWED_COMMANDS.contains(&"cargo"));
+    }
+
+    #[test]
+    fn constants_have_reasonable_values() {
+        assert!(MAX_ARGS > 0 && MAX_ARGS <= 100);
+        assert!(MAX_ARG_LEN > 100 && MAX_ARG_LEN <= 10000);
+    }
+}

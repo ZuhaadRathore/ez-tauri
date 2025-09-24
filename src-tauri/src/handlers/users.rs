@@ -22,7 +22,7 @@ pub async fn get_all_users() -> Result<Vec<PublicUser>, String> {
         ORDER BY created_at DESC
         "#,
     )
-    .fetch_all(pool)
+    .fetch_all(pool.as_ref())
     .await
     .map_err(|e| format!("Failed to fetch users: {}", e))?;
 
@@ -50,7 +50,7 @@ pub async fn get_user_by_id(user_id: String) -> Result<Option<PublicUser>, Strin
         "#,
     )
     .bind(uuid)
-    .fetch_optional(pool)
+    .fetch_optional(pool.as_ref())
     .await
     .map_err(|e| format!("Failed to fetch user: {}", e))?;
 
@@ -91,7 +91,7 @@ pub async fn create_user(user_data: CreateUser) -> Result<PublicUser, String> {
     .bind(password_hash)
     .bind(first_name)
     .bind(last_name)
-    .fetch_one(pool)
+    .fetch_one(pool.as_ref())
     .await
     .map_err(|e| format!("Failed to create user: {}", e))?;
 
@@ -137,7 +137,7 @@ pub async fn update_user(user_id: String, user_data: UpdateUser) -> Result<Publi
     .bind(first_name)
     .bind(last_name)
     .bind(is_active)
-    .fetch_one(pool)
+    .fetch_one(pool.as_ref())
     .await
     .map_err(|e| format!("Failed to update user: {}", e))?;
 
@@ -151,7 +151,7 @@ pub async fn delete_user(user_id: String) -> Result<String, String> {
 
     let result = sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(uuid)
-        .execute(pool)
+        .execute(pool.as_ref())
         .await
         .map_err(|e| format!("Failed to delete user: {}", e))?;
 
@@ -185,7 +185,7 @@ pub async fn authenticate_user(login_data: LoginRequest) -> Result<Option<Public
         "#,
     )
     .bind(&email)
-    .fetch_optional(pool)
+    .fetch_optional(pool.as_ref())
     .await
     .map_err(|e| format!("Failed to authenticate user: {}", e))?;
 
@@ -197,5 +197,110 @@ pub async fn authenticate_user(login_data: LoginRequest) -> Result<Option<Public
         }
     } else {
         Ok(None)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::database::test_utils::{pool, reset_all_tables};
+    use crate::models::{CreateUser, LoginRequest, UpdateUser};
+    use anyhow::Result as AnyResult;
+    use serial_test::serial;
+    use uuid::Uuid;
+
+    fn sample_user_payload() -> CreateUser {
+        let unique_suffix = Uuid::new_v4();
+        CreateUser {
+            email: format!("user+{}@example.com", unique_suffix),
+            username: format!("user_{}", unique_suffix.simple()),
+            password: "Sup3r$ecret".to_string(),
+            first_name: Some("Test".to_string()),
+            last_name: Some("User".to_string()),
+        }
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn full_user_lifecycle_and_authentication() -> AnyResult<()> {
+        let pool = pool().await?;
+        reset_all_tables(pool.as_ref()).await?;
+
+        let payload = sample_user_payload();
+        let email = payload.email.clone();
+        let password = payload.password.clone();
+
+        let created = create_user(payload)
+            .await
+            .expect("user creation should succeed");
+        assert_eq!(created.email, email);
+        assert_eq!(created.first_name.as_deref(), Some("Test"));
+
+        let listed = get_all_users().await.expect("listing users should succeed");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].email, email);
+
+        let fetched = get_user_by_id(created.id.to_string())
+            .await
+            .expect("fetching user should succeed")
+            .expect("user should exist");
+        assert_eq!(fetched.username, listed[0].username);
+
+        let updated = update_user(
+            created.id.to_string(),
+            UpdateUser {
+                email: None,
+                username: Some("updated_user".to_string()),
+                first_name: Some("Updated".to_string()),
+                last_name: None,
+                is_active: Some(true),
+            },
+        )
+        .await
+        .expect("updating user should succeed");
+
+        assert_eq!(updated.first_name.as_deref(), Some("Updated"));
+        assert_eq!(updated.username, "updated_user");
+
+        let authenticated = authenticate_user(LoginRequest {
+            email: email.clone(),
+            password,
+        })
+        .await
+        .expect("authentication should succeed")
+        .expect("credentials should match");
+        assert_eq!(authenticated.id, created.id);
+
+        let wrong_password = authenticate_user(LoginRequest {
+            email: email.clone(),
+            password: "badpassword".to_string(),
+        })
+        .await
+        .expect("authentication should return Ok")
+        .is_none();
+        assert!(wrong_password);
+
+        let deletion = delete_user(created.id.to_string())
+            .await
+            .expect("deleting user should succeed");
+        assert_eq!(deletion, "User deleted successfully");
+
+        let missing = get_user_by_id(created.id.to_string())
+            .await
+            .expect("fetch should succeed")
+            .is_none();
+        assert!(missing);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn delete_user_reports_when_missing() -> AnyResult<()> {
+        let pool = pool().await?;
+        reset_all_tables(pool.as_ref()).await?;
+
+        let response = delete_user(Uuid::new_v4().to_string()).await;
+        assert!(matches!(response, Err(message) if message == "User not found"));
+        Ok(())
     }
 }

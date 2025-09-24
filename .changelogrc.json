@@ -1,0 +1,57 @@
+{
+  "types": {
+    "feat": {
+      "title": "🎉 Features",
+      "description": "New features"
+    },
+    "fix": {
+      "title": "🐛 Bug Fixes",
+      "description": "Bug fixes"
+    },
+    "docs": {
+      "title": "📚 Documentation",
+      "description": "Documentation changes"
+    },
+    "style": {
+      "title": "💅 Styles",
+      "description": "Code style changes (formatting, etc)"
+    },
+    "refactor": {
+      "title": "♻️ Code Refactoring",
+      "description": "Code refactoring"
+    },
+    "perf": {
+      "title": "⚡ Performance Improvements",
+      "description": "Performance improvements"
+    },
+    "test": {
+      "title": "🧪 Tests",
+      "description": "Test changes"
+    },
+    "build": {
+      "title": "🏗️ Build System",
+      "description": "Build system changes"
+    },
+    "ci": {
+      "title": "🤖 Continuous Integration",
+      "description": "CI configuration changes"
+    },
+    "chore": {
+      "title": "🔧 Chores",
+      "description": "Other changes"
+    },
+    "revert": {
+      "title": "⏪ Reverts",
+      "description": "Reverted changes"
+    }
+  },
+  "scopes": {
+    "frontend": "Frontend/React components",
+    "backend": "Rust backend/Tauri handlers",
+    "database": "Database operations and migrations",
+    "ci": "Continuous Integration",
+    "docs": "Documentation",
+    "deps": "Dependencies",
+    "config": "Configuration files"
+  }
+}

@@ -1,30 +1,44 @@
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use sqlx::PgPool;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
-static POOL: OnceCell<Arc<PgPool>> = OnceCell::new();
+static POOL: OnceCell<RwLock<Option<Arc<PgPool>>>> = OnceCell::new();
+
+fn pool_slot() -> &'static RwLock<Option<Arc<PgPool>>> {
+    POOL.get_or_init(|| RwLock::new(None))
+}
 
 pub async fn initialize_database() -> Result<()> {
     dotenv::dotenv().ok();
 
     let pool = super::create_pool().await?;
 
-    // Test connection
     super::test_connection(&pool).await?;
 
-    POOL.set(Arc::new(pool))
-        .map_err(|_| anyhow::anyhow!("Failed to initialize database pool"))?;
+    let arc = Arc::new(pool);
+    let mut guard = pool_slot()
+        .write()
+        .map_err(|_| anyhow::anyhow!("Failed to lock database pool for initialization"))?;
+    *guard = Some(arc);
 
     Ok(())
 }
 
 pub fn get_pool() -> Option<Arc<PgPool>> {
-    POOL.get().cloned()
+    pool_slot()
+        .read()
+        .ok()
+        .and_then(|guard| guard.as_ref().cloned())
 }
 
-pub fn get_pool_ref() -> Result<&'static PgPool> {
-    POOL.get()
-        .map(|arc| arc.as_ref())
-        .ok_or_else(|| anyhow::anyhow!("Database pool not initialized"))
+pub fn get_pool_ref() -> Result<Arc<PgPool>> {
+    get_pool().ok_or_else(|| anyhow::anyhow!("Database pool not initialized"))
+}
+
+#[cfg(test)]
+pub fn reset_pool_for_tests() {
+    if let Ok(mut guard) = pool_slot().write() {
+        *guard = None;
+    }
 }

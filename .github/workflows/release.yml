@@ -25,6 +25,10 @@ jobs:
         node-version: '20'
         cache: 'npm'
 
+    - name: Validate release version
+      id: version
+      run: node scripts/check-release-version.mjs
+
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
 
@@ -45,24 +49,83 @@ jobs:
     - name: Build frontend
       run: npm run build
 
+    - name: Generate changelog
+      run: npm run changelog
+
     - name: Generate release notes
       id: release_notes
       uses: actions/github-script@v7
       with:
         script: |
+          const fs = require('fs');
+          const path = require('path');
           const { owner, repo } = context.repo;
           const tag = context.ref.replace('refs/tags/', '');
+          const version = tag.startsWith('v') ? tag.slice(1) : tag;
+          const templatePath = path.join(process.env.GITHUB_WORKSPACE || '.', '.github', 'release-notes-template.md');
+          const changelogPath = path.join(process.env.GITHUB_WORKSPACE || '.', 'CHANGELOG.md');
+
+          // Read release notes template
+          let template = '# 🚀 Tauri Boilerplate v{{VERSION}}\n\n{{GENERATED_NOTES}}';
+          try {
+            template = fs.readFileSync(templatePath, 'utf8');
+          } catch (error) {
+            console.warn(`Unable to read release-notes template: ${error.message}`);
+          }
+
+          // Generate GitHub release notes
+          let generated = 'See the commit history for changes in this release.';
           try {
             const { data } = await github.rest.repos.generateReleaseNotes({
               owner,
               repo,
               tag_name: tag,
             });
-            return data.body || 'See the commit history for changes in this release.';
+            generated = (data.body || generated).trim();
           } catch (error) {
             console.warn(`Falling back to default release notes: ${error.message}`);
-            return 'See the commit history for changes in this release.';
           }
+
+          // Try to get changelog content for this version
+          let changelogContent = '';
+          try {
+            const changelog = fs.readFileSync(changelogPath, 'utf8');
+            const versionMatch = changelog.match(new RegExp(`## \\[${version}\\][\\s\\S]*?(?=##|$)`, 'm'));
+            if (versionMatch) {
+              changelogContent = versionMatch[0].trim();
+              // Use changelog content instead of GitHub-generated notes if available
+              if (changelogContent) {
+                generated = changelogContent;
+              }
+            }
+          } catch (error) {
+            console.warn(`Unable to read changelog: ${error.message}`);
+          }
+
+          // Get previous tag for comparison link
+          let previousTag = '';
+          try {
+            const { data: tags } = await github.rest.repos.listTags({
+              owner,
+              repo,
+              per_page: 10
+            });
+            const currentIndex = tags.findIndex(t => t.name === tag);
+            if (currentIndex > 0 && currentIndex < tags.length - 1) {
+              previousTag = tags[currentIndex + 1].name;
+            }
+          } catch (error) {
+            console.warn(`Unable to get previous tag: ${error.message}`);
+          }
+
+          // Replace template variables
+          const body = template
+            .replace(/{{\s*VERSION\s*}}/g, version)
+            .replace(/{{\s*GENERATED_NOTES\s*}}/g, generated)
+            .replace(/YOUR_USERNAME\/YOUR_REPO/g, `${owner}/${repo}`)
+            .replace(/PREVIOUS_TAG/g, previousTag || 'HEAD');
+
+          return body;
 
     - name: Build Tauri app
       uses: tauri-apps/tauri-action@v0
@@ -70,7 +133,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tagName: ${{ github.ref_name }}
-        releaseName: Tauri Boilerplate ${{ github.ref_name }}
+        releaseName: Tauri Boilerplate v${{ steps.version.outputs.version }}
         releaseBody: ${{ steps.release_notes.outputs.result }}
         releaseDraft: true
         prerelease: false
