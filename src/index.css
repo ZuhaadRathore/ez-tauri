@@ -1,15 +1,29 @@
-﻿@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * Global styles and Tailwind CSS imports for the application.
+ *
+ * Sets up the foundation for:
+ * - Tailwind CSS utility classes
+ * - Dark/light theme support
+ * - Typography and layout basics
+ * - Full viewport height layouts
+ */
 
+/* Tailwind CSS layer imports */
+@tailwind base; /* Normalize and base styles */
+@tailwind components; /* Component utilities */
+@tailwind utilities; /* Utility classes */
+
+/* Global HTML element styles with theme support */
 html {
   @apply h-full bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100;
 }
 
+/* Body element with full viewport height and smooth fonts */
 body {
   @apply min-h-screen bg-inherit text-inherit antialiased;
 }
 
+/* React root element takes full viewport height */
 #root {
   @apply min-h-screen;
 }

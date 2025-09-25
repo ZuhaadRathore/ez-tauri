@@ -1,6 +1,6 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+/// Entry point for the Tauri application.
 fn main() {
-    tavuc_boilerplate_lib::run()
+    ez_tauri_lib::run()
 }

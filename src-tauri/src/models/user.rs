@@ -1,8 +1,11 @@
+//! User models and data structures for authentication and user management.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+/// Complete user model with all database fields including sensitive data.
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
@@ -17,6 +20,7 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
+/// User model safe for public API responses (excludes password hash).
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicUser {
@@ -29,6 +33,7 @@ pub struct PublicUser {
     pub created_at: DateTime<Utc>,
 }
 
+/// Request payload for creating a new user account.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUser {
@@ -39,6 +44,7 @@ pub struct CreateUser {
     pub last_name: Option<String>,
 }
 
+/// Request payload for updating existing user information.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUser {
@@ -49,6 +55,7 @@ pub struct UpdateUser {
     pub is_active: Option<bool>,
 }
 
+/// Request payload for user authentication.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginRequest {
@@ -57,6 +64,7 @@ pub struct LoginRequest {
 }
 
 impl From<User> for PublicUser {
+    /// Converts a complete User model to a PublicUser by removing sensitive data.
     fn from(user: User) -> Self {
         PublicUser {
             id: user.id,

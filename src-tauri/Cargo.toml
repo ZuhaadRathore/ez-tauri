@@ -1,17 +1,22 @@
 [package]
-name = "tavuc-boilerplate"
+name = "ez-tauri"
 version = "0.1.0"
-description = "A Tauri App Boilerplate"
+description = "A simple, powerful Tauri boilerplate for rapid desktop app development"
 authors = ["Tavuc"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Tauri application with comprehensive features including:
+# - Database management with PostgreSQL
+# - Redis caching with graceful fallbacks
+# - Rate limiting for API protection
+# - Comprehensive logging system
+# - Secure file system access
+# - User authentication and management
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "tavuc_boilerplate_lib"
+# Unique lib name to avoid conflicts with binary name on Windows
+# See: https://github.com/rust-lang/cargo/issues/8519
+name = "ez_tauri_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -19,6 +24,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["test"] }
+tauri-plugin-stronghold = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 tauri-plugin-opener = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
@@ -26,6 +32,8 @@ tauri-plugin-notification = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-os = "2"
 tauri-plugin-shell = "2"
+thiserror = "1.0"
+argon2 = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
@@ -39,14 +47,21 @@ bcrypt = "0.15"
 hostname = "0.3"
 directories = "5"
 dunce = "1"
-# Logging dependencies
+redis = { version = "0.25", features = ["tokio-comp"] }
+regex = "1.0"
+# Rate limiting dependencies
+governor = "0.7"
+nonzero_ext = "0.3"
+
+# Logging and tracing dependencies
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "time", "local-time"] }
 tracing-appender = "0.2"
 log = "0.4"
 
 [dev-dependencies]
-tempfile = "3"
-serial_test = "3"
-testcontainers = "0.25"
-testcontainers-modules = { version = "0.13", features = ["postgres"] }
+# Testing utilities
+tempfile = "3"                                                          # Temporary file management for tests
+serial_test = "3"                                                       # Sequential test execution
+testcontainers = "0.25"                                                 # Docker container management for integration tests
+testcontainers-modules = { version = "0.13", features = ["postgres"] }  # PostgreSQL test containers

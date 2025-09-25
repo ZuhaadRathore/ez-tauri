@@ -1,3 +1,5 @@
+//! Test utilities for database operations using Docker containers.
+
 #![cfg(test)]
 
 use std::{sync::Arc, time::Duration};
@@ -13,14 +15,17 @@ use tokio::time::sleep;
 
 use super::{connection, migrations};
 
+/// Container context for managing test database lifecycle.
 struct ContainerContext {
     #[allow(dead_code)]
     container: ContainerAsync<Postgres>,
     connection_string: String,
 }
 
+/// Global context for sharing test database container across tests.
 static CONTEXT: OnceCell<ContainerContext> = OnceCell::const_new();
 
+/// Gets or initializes the shared test database context.
 async fn context() -> Result<&'static ContainerContext> {
     CONTEXT
         .get_or_try_init(|| async {
@@ -53,6 +58,7 @@ async fn context() -> Result<&'static ContainerContext> {
         .await
 }
 
+/// Creates a test database pool with migrations applied.
 pub async fn pool() -> Result<Arc<PgPool>> {
     let ctx = context().await?;
 
@@ -72,6 +78,7 @@ pub async fn pool() -> Result<Arc<PgPool>> {
     Ok(pool)
 }
 
+/// Resets all tables in the test database for clean test isolation.
 pub async fn reset_all_tables(pool: &PgPool) -> Result<()> {
     sqlx::query("TRUNCATE TABLE app_logs RESTART IDENTITY CASCADE")
         .execute(pool)
@@ -86,6 +93,7 @@ pub async fn reset_all_tables(pool: &PgPool) -> Result<()> {
     Ok(())
 }
 
+/// Waits for the database container to be ready for connections.
 async fn wait_for_database(connection_string: &str) -> Result<()> {
     let mut attempts = 0;
     loop {

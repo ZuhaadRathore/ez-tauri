@@ -1,7 +1,11 @@
+//! Database connection and health check handlers.
+
 use crate::database::{get_pool_ref, test_connection};
+use crate::errors::{AppError, AppResult, ErrorCode, IntoAppError};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+/// Database connection status information.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DatabaseStatus {
@@ -11,67 +15,81 @@ pub struct DatabaseStatus {
     pub error: Option<String>,
 }
 
+/// Checks database connectivity and returns connection status information.
 #[tauri::command]
-pub async fn check_database_connection() -> Result<DatabaseStatus, String> {
-    match get_pool_ref() {
-        Ok(pool) => {
-            match test_connection(pool.as_ref()).await {
-                Ok(_) => {
-                    // Get database name and version
-                    let db_info: Result<(String, String), sqlx::Error> =
-                        sqlx::query_as("SELECT current_database(), version()")
-                            .fetch_one(pool.as_ref())
-                            .await;
+pub async fn check_database_connection() -> Result<DatabaseStatus, AppError> {
+    tracing::info!("Checking database connection");
 
-                    match db_info {
-                        Ok((db_name, version)) => Ok(DatabaseStatus {
-                            connected: true,
-                            database_name: Some(db_name),
-                            version: Some(version),
-                            error: None,
-                        }),
-                        Err(e) => Ok(DatabaseStatus {
-                            connected: true,
-                            database_name: None,
-                            version: None,
-                            error: Some(format!("Failed to get database info: {}", e)),
-                        }),
-                    }
+    let pool = get_pool_ref()
+        .into_app_error(ErrorCode::DatabaseConnection)?;
+
+    match test_connection(pool.as_ref()).await {
+        Ok(_) => {
+            let db_info_result = sqlx::query_as::<_, (String, String)>(
+                "SELECT current_database(), version()"
+            )
+            .fetch_one(pool.as_ref())
+            .await;
+
+            match db_info_result {
+                Ok((db_name, version)) => {
+                    tracing::info!("Database connection successful: {} ({})", db_name, version);
+                    Ok(DatabaseStatus {
+                        connected: true,
+                        database_name: Some(db_name),
+                        version: Some(version),
+                        error: None,
+                    })
                 }
-                Err(e) => Ok(DatabaseStatus {
-                    connected: false,
-                    database_name: None,
-                    version: None,
-                    error: Some(e.to_string()),
-                }),
+                Err(e) => {
+                    tracing::warn!("Connected to database but failed to get info: {}", e);
+                    Ok(DatabaseStatus {
+                        connected: true,
+                        database_name: None,
+                        version: None,
+                        error: Some(format!("Failed to get database info: {}", e)),
+                    })
+                }
             }
         }
-        Err(e) => Ok(DatabaseStatus {
-            connected: false,
-            database_name: None,
-            version: None,
-            error: Some(e.to_string()),
-        }),
+        Err(e) => {
+            tracing::error!("Database connection test failed: {}", e);
+            Ok(DatabaseStatus {
+                connected: false,
+                database_name: None,
+                version: None,
+                error: Some(e.to_string()),
+            })
+        }
     }
 }
 
 #[tauri::command]
-pub async fn initialize_database() -> Result<String, String> {
-    match crate::database::initialize_database().await {
-        Ok(_) => Ok("Database initialized successfully".to_string()),
-        Err(e) => Err(format!("Failed to initialize database: {}", e)),
-    }
+pub async fn initialize_database() -> AppResult<String> {
+    tracing::info!("Initializing database");
+
+    // Note: This would need access to stronghold, but we can't easily pass it through
+    // For now, we'll return an error indicating it needs to be called differently
+    Err(AppError::new(
+        ErrorCode::InvalidInput,
+        "Database initialization requires stronghold access".to_string()
+    ))
 }
 
 #[tauri::command]
-pub async fn run_migrations() -> Result<String, String> {
-    match get_pool_ref() {
-        Ok(pool) => match crate::database::migrations::run_migrations(pool.as_ref()).await {
-            Ok(_) => Ok("Migrations completed successfully".to_string()),
-            Err(e) => Err(format!("Migration failed: {}", e)),
-        },
-        Err(e) => Err(format!("Database not available: {}", e)),
-    }
+pub async fn run_migrations() -> AppResult<String> {
+    tracing::info!("Running database migrations");
+
+    let pool = get_pool_ref()
+        .into_app_error(ErrorCode::DatabaseConnection)?;
+
+    crate::database::migrations::run_migrations(pool.as_ref())
+        .await
+        .into_app_error(ErrorCode::DatabaseMigration)
+        .map(|_| {
+            tracing::info!("Migrations completed successfully");
+            "Migrations completed successfully".to_string()
+        })
 }
 #[cfg(test)]
 mod tests {

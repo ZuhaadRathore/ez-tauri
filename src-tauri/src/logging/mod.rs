@@ -1,3 +1,5 @@
+//! Comprehensive logging system with file rotation, structured logging, and configuration management.
+
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use directories::ProjectDirs;
@@ -19,8 +21,10 @@ use tracing_subscriber::{
 pub mod config;
 pub mod handlers;
 
+/// Ensures logging system is initialized only once.
 static LOG_INITIALIZED: Lazy<std::sync::Mutex<bool>> = Lazy::new(|| std::sync::Mutex::new(false));
 
+/// Log levels supported by the application.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LogLevel {
@@ -70,6 +74,7 @@ impl std::fmt::Display for LogLevel {
     }
 }
 
+/// Structured log entry with metadata and context information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
@@ -84,6 +89,7 @@ pub struct LogEntry {
     pub line: Option<u32>,
 }
 
+/// Configuration for the logging system with file and console output options.
 #[derive(Debug, Clone)]
 pub struct LogConfig {
     pub level: LogLevel,
@@ -104,14 +110,17 @@ impl Default for LogConfig {
             file_enabled: true,
             json_format: false,
             log_dir: default_log_dir(),
-            file_prefix: "tavuc-boilerplate".to_string(),
+            file_prefix: "ez-tauri".to_string(),
             rotation: Rotation::DAILY,
             max_log_files: 30,
         }
     }
 }
 
-/// Initialize the logging system with the given configuration
+/// Initializes the logging system with the given configuration.
+///
+/// Sets up both console and file logging with the specified format and rotation.
+/// This function is idempotent - calling it multiple times has no additional effect.
 pub fn init_logging(config: LogConfig) -> Result<()> {
     let mut guard = LOG_INITIALIZED.lock().unwrap();
     if *guard {
@@ -119,19 +128,16 @@ pub fn init_logging(config: LogConfig) -> Result<()> {
         return Ok(());
     }
 
-    // Ensure log directory exists
     if config.file_enabled {
         fs::create_dir_all(&config.log_dir)?;
     }
 
-    // Set up the environment filter
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new(config.level.to_string()))
         .unwrap_or_else(|_| EnvFilter::new("info"));
 
     let mut layers = Vec::new();
 
-    // Console layer
     if config.console_enabled {
         let console_layer = fmt::layer()
             .with_target(true)
@@ -148,7 +154,6 @@ pub fn init_logging(config: LogConfig) -> Result<()> {
         }
     }
 
-    // File layer
     if config.file_enabled {
         let file_appender = RollingFileAppender::new(
             config.rotation.clone(),
@@ -171,7 +176,6 @@ pub fn init_logging(config: LogConfig) -> Result<()> {
         }
     }
 
-    // Initialize the subscriber
     tracing_subscriber::registry()
         .with(env_filter)
         .with(layers)
@@ -184,7 +188,6 @@ pub fn init_logging(config: LogConfig) -> Result<()> {
         config.level, config.console_enabled, config.file_enabled, config.json_format
     );
 
-    // Clean up old log files if needed
     if config.file_enabled {
         cleanup_old_logs(&config)?;
     }
@@ -192,9 +195,9 @@ pub fn init_logging(config: LogConfig) -> Result<()> {
     Ok(())
 }
 
-/// Get the default log directory for the application
+/// Returns the default log directory for the application.
 pub(crate) fn default_log_dir() -> PathBuf {
-    ProjectDirs::from("com", "tavuc", "tavuc-boilerplate")
+    ProjectDirs::from("com", "tavuc", "eztauri")
         .map(|dirs| dirs.data_dir().join("logs"))
         .unwrap_or_else(|| {
             std::env::current_dir()
@@ -203,8 +206,9 @@ pub(crate) fn default_log_dir() -> PathBuf {
         })
 }
 
+/// Returns the default path for logging configuration file.
 pub(crate) fn default_log_config_path() -> PathBuf {
-    ProjectDirs::from("com", "tavuc", "tavuc-boilerplate")
+    ProjectDirs::from("com", "tavuc", "eztauri")
         .map(|dirs| dirs.config_dir().join("logging.json"))
         .unwrap_or_else(|| {
             std::env::current_dir()
@@ -213,7 +217,7 @@ pub(crate) fn default_log_config_path() -> PathBuf {
         })
 }
 
-/// Clean up old log files based on retention policy
+/// Cleans up old log files based on retention policy.
 fn cleanup_old_logs(config: &LogConfig) -> Result<()> {
     let log_dir = &config.log_dir;
 
@@ -231,7 +235,6 @@ fn cleanup_old_logs(config: &LogConfig) -> Result<()> {
         })
         .collect();
 
-    // Sort by modification time (newest first)
     log_files.sort_by(|a, b| {
         let a_metadata = a.metadata().ok();
         let b_metadata = b.metadata().ok();
@@ -245,7 +248,6 @@ fn cleanup_old_logs(config: &LogConfig) -> Result<()> {
         }
     });
 
-    // Remove old files beyond the retention limit
     for old_file in log_files.iter().skip(config.max_log_files) {
         if let Err(e) = fs::remove_file(old_file.path()) {
             error!("Failed to remove old log file {:?}: {}", old_file.path(), e);
@@ -257,7 +259,7 @@ fn cleanup_old_logs(config: &LogConfig) -> Result<()> {
     Ok(())
 }
 
-/// Create a structured log entry with context
+/// Creates a structured log entry with additional context fields.
 #[macro_export]
 macro_rules! log_with_context {
     ($level:expr, $message:expr, $($key:expr => $value:expr),*) => {
@@ -281,6 +283,7 @@ macro_rules! log_with_context {
     };
 }
 
+/// Initializes logging system using environment variables and configuration files.
 pub fn init_logging_from_env() -> Result<()> {
     let env_config = config::load_config_from_env();
 

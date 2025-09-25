@@ -1,6 +1,6 @@
-# Contributing to Tauri Boilerplate
+# Contributing to EZ Tauri
 
-Thank you for your interest in contributing to the Tauri Boilerplate! This guide will help you get started.
+Thank you for your interest in contributing to EZ Tauri! This guide will help you get started.
 
 ## 📋 Prerequisites
 
@@ -14,8 +14,8 @@ Thank you for your interest in contributing to the Tauri Boilerplate! This guide
 1. **Fork and clone the repository**
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/tauri-boilerplate.git
-   cd tauri-boilerplate
+   git clone https://github.com/YOUR_USERNAME/ez-tauri.git
+   cd ez-tauri
    ```
 
 2. **Install dependencies**

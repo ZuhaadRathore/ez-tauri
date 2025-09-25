@@ -1,9 +1,12 @@
+//! Logging configuration structures and management.
+
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing_appender::rolling::Rotation;
 
 use super::LogLevel;
 
+/// Main logging configuration structure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppLogConfig {
@@ -14,6 +17,7 @@ pub struct AppLogConfig {
     pub structured: StructuredLogConfig,
 }
 
+/// Configuration for console logging output.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConsoleLogConfig {
@@ -22,6 +26,7 @@ pub struct ConsoleLogConfig {
     pub colors: bool,
 }
 
+/// Configuration for file logging with rotation settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileLogConfig {
@@ -33,6 +38,7 @@ pub struct FileLogConfig {
     pub max_size_mb: Option<u64>,
 }
 
+/// Configuration for structured logging features.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructuredLogConfig {
@@ -43,6 +49,7 @@ pub struct StructuredLogConfig {
     pub include_file_info: bool,
 }
 
+/// Available log output formats.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LogFormat {
@@ -52,6 +59,7 @@ pub enum LogFormat {
     Full,
 }
 
+/// Log file rotation intervals.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LogRotation {
@@ -101,7 +109,7 @@ impl Default for FileLogConfig {
         Self {
             enabled: true,
             directory: "logs".to_string(),
-            filename_prefix: "tavuc-boilerplate".to_string(),
+            filename_prefix: "ez-tauri".to_string(),
             rotation: LogRotation::Daily,
             max_files: 30,
             max_size_mb: Some(100),
@@ -121,13 +129,12 @@ impl Default for StructuredLogConfig {
     }
 }
 
-/// Load logging configuration from environment variables
+/// Loads logging configuration from environment variables with fallback defaults.
 pub fn load_config_from_env() -> AppLogConfig {
     use std::env;
 
     let mut config = AppLogConfig::default();
 
-    // Overall logging
     if let Ok(enabled) = env::var("LOG_ENABLED") {
         config.enabled = enabled.parse().unwrap_or(true);
     }
@@ -136,7 +143,6 @@ pub fn load_config_from_env() -> AppLogConfig {
         config.level = level.as_str().into();
     }
 
-    // Console logging
     if let Ok(console_enabled) = env::var("LOG_CONSOLE_ENABLED") {
         config.console.enabled = console_enabled.parse().unwrap_or(true);
     }
@@ -154,7 +160,6 @@ pub fn load_config_from_env() -> AppLogConfig {
         config.console.colors = colors.parse().unwrap_or(true);
     }
 
-    // File logging
     if let Ok(file_enabled) = env::var("LOG_FILE_ENABLED") {
         config.file.enabled = file_enabled.parse().unwrap_or(true);
     }
@@ -192,14 +197,14 @@ pub fn load_config_from_env() -> AppLogConfig {
     config
 }
 
-/// Save logging configuration to a file
+/// Saves logging configuration to a JSON file.
 pub fn save_config_to_file(config: &AppLogConfig, path: &PathBuf) -> anyhow::Result<()> {
     let json = serde_json::to_string_pretty(config)?;
     std::fs::write(path, json)?;
     Ok(())
 }
 
-/// Load logging configuration from a file
+/// Loads logging configuration from a JSON file.
 pub fn load_config_from_file(path: &PathBuf) -> anyhow::Result<AppLogConfig> {
     let content = std::fs::read_to_string(path)?;
     let config: AppLogConfig = serde_json::from_str(&content)?;

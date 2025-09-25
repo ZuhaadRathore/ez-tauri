@@ -1,6 +1,12 @@
+//! Database connection management and utilities.
+//!
+//! Provides PostgreSQL connection pooling, migrations, and database utilities
+//! with environment-aware configuration.
+
 use anyhow::Result;
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::{env, time::Duration};
+use std::time::Duration;
+use crate::config::AppConfig;
 
 pub mod connection;
 pub mod migrations;
@@ -9,15 +15,26 @@ pub mod test_utils;
 
 pub use connection::*;
 
+/// Creates a database connection pool using configuration from environment.
 pub async fn create_pool() -> Result<PgPool> {
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
-        "postgresql://tauri_user:tauri_password@localhost:5432/tauri_app".to_string()
-    });
+    let config = AppConfig::from_env();
+    create_pool_with_url(&config.database_url).await
+}
+
+/// Creates a database connection pool with a specific database URL.
+///
+/// # Arguments
+/// * `database_url` - PostgreSQL connection string
+///
+/// # Returns
+/// * `Result<PgPool>` - Connection pool or error
+pub async fn create_pool_with_url(database_url: &str) -> Result<PgPool> {
+    let config = AppConfig::from_env();
 
     let pool = PgPoolOptions::new()
-        .max_connections(20)
+        .max_connections(if config.is_production() { 50 } else { 20 })
         .acquire_timeout(Duration::from_secs(60))
-        .connect(&database_url)
+        .connect(database_url)
         .await?;
 
     Ok(pool)

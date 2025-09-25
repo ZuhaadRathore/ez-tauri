@@ -1,8 +1,11 @@
+//! User settings and application configuration models.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+/// User-specific settings stored in the database.
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[allow(dead_code)]
 pub struct UserSettings {
@@ -16,6 +19,7 @@ pub struct UserSettings {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Request payload for creating new user settings.
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 pub struct CreateUserSettings {
@@ -26,6 +30,7 @@ pub struct CreateUserSettings {
     pub settings_data: Option<serde_json::Value>,
 }
 
+/// Request payload for updating existing user settings.
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 pub struct UpdateUserSettings {
@@ -35,6 +40,7 @@ pub struct UpdateUserSettings {
     pub settings_data: Option<serde_json::Value>,
 }
 
+/// General application settings with common UI preferences.
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct AppSettings {
@@ -44,6 +50,7 @@ pub struct AppSettings {
 }
 
 impl Default for AppSettings {
+    /// Creates default application settings with sensible defaults.
     fn default() -> Self {
         AppSettings {
             sidebar_collapsed: Some(false),
