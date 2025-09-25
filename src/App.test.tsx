@@ -25,12 +25,14 @@ beforeEach(() => {
 })
 
 describe('App shell', () => {
-  it('renders the welcome message', () => {
+  it('renders the welcome message', async () => {
     render(<App />)
 
-    expect(
-      screen.getByRole('heading', { name: /welcome aboard/i })
-    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: /modern desktop app boilerplate/i })
+      ).toBeInTheDocument()
+    )
   })
 
   it('toggles between light and dark themes', async () => {

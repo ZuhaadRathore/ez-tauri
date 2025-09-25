@@ -1,14 +1,25 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Basic meta tags for proper document rendering -->
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Security headers to prevent XSS and other attacks -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self';" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+
     <title>Tauri + React + Typescript</title>
   </head>
 
   <body>
+    <!-- React application root element -->
     <div id="root"></div>
+
+    <!-- Main application entry point -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

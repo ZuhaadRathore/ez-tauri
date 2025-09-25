@@ -1,6 +1,6 @@
-# 🚀 Tauri Boilerplate
+# 🚀 EZ Tauri
 
-A comprehensive, production-ready boilerplate for building modern desktop applications with **Tauri v2**, **React 18**, **TypeScript**, and **Tailwind CSS**.
+A simple, powerful Tauri boilerplate for rapid desktop app development. Build modern desktop applications with **Tauri v2**, **React 18**, **TypeScript**, and **Tailwind CSS** - everything you need, nothing you don't.
 
 ## ✨ Features
 
@@ -22,8 +22,9 @@ A comprehensive, production-ready boilerplate for building modern desktop applic
   - Native notifications
   - System information access
   - Command execution
+  - **Secure secrets management** with `tauri-plugin-stronghold`
 
-> **Filesystem sandbox**: All filesystem commands operate inside the application data directory (`%APPDATA%/tavuc-boilerplate` on Windows, `~/Library/Application Support/com.tavuc.tavuc-boilerplate` on macOS, etc.). Provide paths relative to that root — absolute paths or traversal attempts (for example, using `../`) are rejected.
+> **Filesystem sandbox**: All filesystem commands operate inside the application data directory (`%APPDATA%/ez-tauri` on Windows, `~/Library/Application Support/com.tavuc.eztauri` on macOS, etc.). Provide paths relative to that root — absolute paths or traversal attempts (for example, using `../`) are rejected.
 
 ### 🗄️ Database
 
@@ -83,8 +84,16 @@ sudo apt install libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-de
 ### 1. Clone and Install
 
 ```bash
+npm create ez-tauri my-app
+cd my-app
+npm install
+```
+
+_Or clone directly:_
+
+```bash
 git clone <your-repo-url>
-cd tauri-boilerplate
+cd ez-tauri
 npm install
 ```
 
@@ -98,8 +107,9 @@ docker-compose up -d
 
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
 ```
+
+The `.env.example` file contains placeholder values. Copy it to `.env` for local development and replace the placeholders with your actual credentials. The `.env` file is ignored by Git to keep your secrets safe.
 
 ### 4. Initialize Database
 
@@ -356,7 +366,8 @@ timer.finish()
 Update your `.env` file with database credentials:
 
 ```env
-DATABASE_URL=postgres://postgres:password@localhost:5432/tauri_app
+# On first run, this URL will be securely stored. After the first run, this value is no longer used.
+DATABASE_URL=postgres://user:password@localhost:5432/ez_tauri
 ```
 
 ### Migrations
@@ -439,6 +450,10 @@ npm run tauri:build
 - **Linux** - `.AppImage` and `.deb` packages
 
 ## 🔒 Security
+
+### Secrets Management
+
+This boilerplate uses `tauri-plugin-stronghold` to securely store sensitive information, such as the database connection URL. On the first run, the application reads the `DATABASE_URL` from the `.env` file, encrypts it, and stores it in Stronghold. On subsequent runs, the application retrieves the URL from Stronghold, ensuring that the plaintext secret is not stored on disk.
 
 ### Best Practices Implemented
 
@@ -523,9 +538,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Happy Coding! 🎉**
+**Happy Coding with EZ Tauri! 🎉**
 
-If you find this boilerplate helpful, please consider giving it a star ⭐
+If you find EZ Tauri helpful, please consider giving it a star ⭐
+
+Build desktop apps the EZ way!
 
 ## Recommended IDE Setup
 

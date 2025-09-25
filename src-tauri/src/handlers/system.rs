@@ -1,7 +1,10 @@
+//! System information and utility command handlers.
+
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Window};
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 
+/// System information structure.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SystemInfo {
     pub platform: String,
@@ -10,6 +13,7 @@ pub struct SystemInfo {
     pub hostname: String,
 }
 
+/// Window information and state structure.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WindowInfo {
     pub label: String,
@@ -21,12 +25,15 @@ pub struct WindowInfo {
     pub position: (i32, i32),
     pub size: (u32, u32),
 }
+/// Allowlist of safe commands that can be executed.
 const ALLOWED_COMMANDS: &[&str] = &[
     "npm", "npx", "pnpm", "yarn", "bun", "cargo", "rustup", "tauri", "node", "deno", "python",
     "pip", "pip3", "echo",
 ];
 
+/// Maximum number of command arguments allowed.
 const MAX_ARGS: usize = 20;
+/// Maximum length of each command argument.
 const MAX_ARG_LEN: usize = 2048;
 
 #[tauri::command]
@@ -151,6 +158,72 @@ pub async fn center_window(window: Window) -> Result<String, String> {
 #[tauri::command]
 pub async fn set_window_title(window: Window, title: String) -> Result<String, String> {
     window.set_title(&title).map_err(|e| e.to_string())?;
+    Ok(format!("Window title set to: {}", title))
+}
+
+// Alternative handlers that work with AppHandle for rate-limited versions
+#[tauri::command]
+pub async fn get_window_info_by_app(app: AppHandle) -> Result<WindowInfo, String> {
+    let webview_window = app.get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    let label = webview_window.label().to_string();
+    let title = webview_window.title().map_err(|e| e.to_string())?;
+    let is_maximized = webview_window.is_maximized().map_err(|e| e.to_string())?;
+    let is_minimized = webview_window.is_minimized().map_err(|e| e.to_string())?;
+    let is_visible = webview_window.is_visible().map_err(|e| e.to_string())?;
+    let is_focused = webview_window.is_focused().map_err(|e| e.to_string())?;
+
+    let position = webview_window.outer_position().map_err(|e| e.to_string())?;
+    let size = webview_window.outer_size().map_err(|e| e.to_string())?;
+
+    Ok(WindowInfo {
+        label,
+        title,
+        is_maximized,
+        is_minimized,
+        is_visible,
+        is_focused,
+        position: (position.x, position.y),
+        size: (size.width, size.height),
+    })
+}
+
+#[tauri::command]
+pub async fn toggle_window_maximize_by_app(app: AppHandle) -> Result<String, String> {
+    let webview_window = app.get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    if webview_window.is_maximized().map_err(|e| e.to_string())? {
+        webview_window.unmaximize().map_err(|e| e.to_string())?;
+        Ok("Window unmaximized".to_string())
+    } else {
+        webview_window.maximize().map_err(|e| e.to_string())?;
+        Ok("Window maximized".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn minimize_window_by_app(app: AppHandle) -> Result<String, String> {
+    let webview_window = app.get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    webview_window.minimize().map_err(|e| e.to_string())?;
+    Ok("Window minimized".to_string())
+}
+
+#[tauri::command]
+pub async fn center_window_by_app(app: AppHandle) -> Result<String, String> {
+    let webview_window = app.get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    webview_window.center().map_err(|e| e.to_string())?;
+    Ok("Window centered".to_string())
+}
+
+#[tauri::command]
+pub async fn set_window_title_by_app(app: AppHandle, title: String) -> Result<String, String> {
+    let webview_window = app.get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    webview_window.set_title(&title).map_err(|e| e.to_string())?;
     Ok(format!("Window title set to: {}", title))
 }
 

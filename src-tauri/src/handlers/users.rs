@@ -1,8 +1,12 @@
+//! User management command handlers.
+
 use crate::database::get_pool_ref;
 use crate::models::{CreateUser, LoginRequest, PublicUser, UpdateUser, User};
+use crate::validation::{validate_email, validate_username, validate_optional_name};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use uuid::Uuid;
 
+/// Retrieves all users from the database (excluding password hashes).
 #[tauri::command]
 pub async fn get_all_users() -> Result<Vec<PublicUser>, String> {
     let pool = get_pool_ref().map_err(|e| e.to_string())?;
@@ -29,6 +33,7 @@ pub async fn get_all_users() -> Result<Vec<PublicUser>, String> {
     Ok(users.into_iter().map(PublicUser::from).collect())
 }
 
+/// Retrieves a specific user by their UUID.
 #[tauri::command]
 pub async fn get_user_by_id(user_id: String) -> Result<Option<PublicUser>, String> {
     let pool = get_pool_ref().map_err(|e| e.to_string())?;
@@ -57,6 +62,7 @@ pub async fn get_user_by_id(user_id: String) -> Result<Option<PublicUser>, Strin
     Ok(user.map(PublicUser::from))
 }
 
+/// Creates a new user account with validation and password hashing.
 #[tauri::command]
 pub async fn create_user(user_data: CreateUser) -> Result<PublicUser, String> {
     let pool = get_pool_ref().map_err(|e| e.to_string())?;
@@ -67,6 +73,11 @@ pub async fn create_user(user_data: CreateUser) -> Result<PublicUser, String> {
         first_name,
         last_name,
     } = user_data;
+
+    let email = validate_email(&email).map_err(|e| format!("Invalid email: {}", e))?;
+    let username = validate_username(&username).map_err(|e| format!("Invalid username: {}", e))?;
+    let first_name = validate_optional_name(first_name.as_deref()).map_err(|e| format!("Invalid first name: {}", e))?;
+    let last_name = validate_optional_name(last_name.as_deref()).map_err(|e| format!("Invalid last name: {}", e))?;
 
     let password_hash = hash(password.as_str(), DEFAULT_COST)
         .map_err(|e| format!("Failed to hash password: {}", e))?;
@@ -109,6 +120,18 @@ pub async fn update_user(user_id: String, user_data: UpdateUser) -> Result<Publi
         last_name,
         is_active,
     } = user_data;
+
+    // Validate and sanitize inputs
+    let email = match email.as_deref() {
+        Some(e) => Some(validate_email(e).map_err(|e| format!("Invalid email: {}", e))?),
+        None => None,
+    };
+    let username = match username.as_deref() {
+        Some(u) => Some(validate_username(u).map_err(|e| format!("Invalid username: {}", e))?),
+        None => None,
+    };
+    let first_name = validate_optional_name(first_name.as_deref()).map_err(|e| format!("Invalid first name: {}", e))?;
+    let last_name = validate_optional_name(last_name.as_deref()).map_err(|e| format!("Invalid last name: {}", e))?;
 
     let user = sqlx::query_as::<_, User>(
         r#"
@@ -166,6 +189,9 @@ pub async fn delete_user(user_id: String) -> Result<String, String> {
 pub async fn authenticate_user(login_data: LoginRequest) -> Result<Option<PublicUser>, String> {
     let pool = get_pool_ref().map_err(|e| e.to_string())?;
     let LoginRequest { email, password } = login_data;
+
+    // Validate email input
+    let email = validate_email(&email).map_err(|e| format!("Invalid email: {}", e))?;
 
     let user = sqlx::query_as::<_, User>(
         r#"

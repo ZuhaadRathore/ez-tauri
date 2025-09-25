@@ -9,6 +9,22 @@ const host = process.env.TAURI_DEV_HOST
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  // Build optimization
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          react: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@tauri-apps/api', '@tauri-apps/plugin-opener'],
+          store: ['zustand'],
+          utils: ['zod', 'dompurify'],
+        },
+      },
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors

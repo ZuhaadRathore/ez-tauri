@@ -1,0 +1,5 @@
+# Rust toolchain configuration for consistent builds across environments
+[toolchain]
+channel = "1.75.0"                    # Specific Rust version for reproducible builds
+components = ["rustfmt", "clippy"]    # Code formatting and linting tools
+profile = "minimal"                   # Minimal profile for faster installs

@@ -1,3 +1,5 @@
+//! Secure filesystem access handlers with path traversal protection.
+
 use chrono::{DateTime, Utc};
 use directories::ProjectDirs;
 use dunce::canonicalize;
@@ -12,6 +14,7 @@ const APP_QUALIFIER: &str = "com";
 const APP_ORGANIZATION: &str = "tavuc";
 const APP_NAME: &str = "tavuc-boilerplate";
 
+/// File or directory metadata information.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileInfo {
     pub name: String,
@@ -23,12 +26,14 @@ pub struct FileInfo {
     pub created: Option<String>,
 }
 
+/// Directory contents listing with metadata.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DirectoryListing {
     pub path: String,
     pub entries: Vec<FileInfo>,
 }
 
+/// Internal context for filesystem operations with root path validation.
 struct FsContext {
     root: PathBuf,
     path: PathBuf,
@@ -44,6 +49,7 @@ impl FsContext {
     }
 }
 
+/// Reads the contents of a text file within the allowed filesystem scope.
 #[tauri::command]
 pub async fn read_text_file(path: String) -> Result<String, String> {
     if path.trim().is_empty() {

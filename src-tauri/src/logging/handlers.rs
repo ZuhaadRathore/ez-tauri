@@ -1,3 +1,5 @@
+//! Tauri command handlers for log management and retrieval.
+
 use crate::logging::{config::AppLogConfig, LogEntry, LogLevel};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
@@ -7,6 +9,7 @@ use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, error, info};
 
+/// Query parameters for filtering log entries.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogQueryParams {
@@ -19,6 +22,7 @@ pub struct LogQueryParams {
     pub offset: Option<usize>,
 }
 
+/// Response structure for log queries with pagination info.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogResponse {
@@ -27,12 +31,11 @@ pub struct LogResponse {
     pub has_more: bool,
 }
 
-/// Get the current logging configuration
+/// Retrieves the current logging configuration from file or environment.
 #[tauri::command]
 pub async fn get_log_config() -> Result<AppLogConfig, String> {
     debug!("Getting current log configuration");
 
-    // Try to load from config file first, fallback to environment
     let config_path = get_log_config_path();
     let config = if config_path.exists() {
         crate::logging::config::load_config_from_file(&config_path)
@@ -44,12 +47,11 @@ pub async fn get_log_config() -> Result<AppLogConfig, String> {
     Ok(config)
 }
 
-/// Update the logging configuration
+/// Updates and saves the logging configuration to file.
 #[tauri::command]
 pub async fn update_log_config(config: AppLogConfig) -> Result<String, String> {
     info!("Updating log configuration: {:?}", config);
 
-    // Save the configuration to file
     let config_path = get_log_config_path();
     if let Some(parent) = config_path.parent() {
         if let Err(e) = fs::create_dir_all(parent) {
@@ -63,8 +65,6 @@ pub async fn update_log_config(config: AppLogConfig) -> Result<String, String> {
         return Err(format!("Failed to save configuration: {}", e));
     }
 
-    // Note: In a real application, you might want to reinitialize the logging system here
-    // For now, we'll just save the config and return success
     info!("Log configuration updated successfully");
     Ok(
         "Configuration updated successfully. Restart the application for changes to take effect."
@@ -72,7 +72,7 @@ pub async fn update_log_config(config: AppLogConfig) -> Result<String, String> {
     )
 }
 
-/// Get log entries based on query parameters
+/// Retrieves log entries based on query parameters with pagination support.
 #[tauri::command]
 pub async fn get_log_entries(params: LogQueryParams) -> Result<LogResponse, String> {
     debug!("Getting log entries with params: {:?}", params);
@@ -86,10 +86,8 @@ pub async fn get_log_entries(params: LogQueryParams) -> Result<LogResponse, Stri
         });
     }
 
-    // Get all log files
     let mut log_files = get_log_files(&log_dir)?;
     log_files.sort_by(|a, b| {
-        // Sort by modification time, newest first
         let a_metadata = a.metadata().ok();
         let b_metadata = b.metadata().ok();
 
@@ -104,7 +102,6 @@ pub async fn get_log_entries(params: LogQueryParams) -> Result<LogResponse, Stri
 
     let mut all_logs = Vec::new();
 
-    // Read logs from files (limit to recent files for performance)
     for log_file in log_files.iter().take(5) {
         if let Ok(content) = fs::read_to_string(log_file) {
             let file_logs = parse_log_content(&content, &params);
@@ -112,14 +109,12 @@ pub async fn get_log_entries(params: LogQueryParams) -> Result<LogResponse, Stri
         }
     }
 
-    // Apply filters and sorting
     all_logs = filter_logs(all_logs, &params);
-    all_logs.sort_by(|a, b| b.timestamp.cmp(&a.timestamp)); // Newest first
+    all_logs.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
-    // Apply pagination
     let total_count = all_logs.len();
     let offset = params.offset.unwrap_or(0);
-    let limit = params.limit.unwrap_or(100).min(1000); // Max 1000 entries per request
+    let limit = params.limit.unwrap_or(100).min(1000);
 
     let end_index = (offset + limit).min(total_count);
     let paginated_logs = if offset < total_count {
@@ -137,7 +132,7 @@ pub async fn get_log_entries(params: LogQueryParams) -> Result<LogResponse, Stri
     })
 }
 
-/// Clear old log files
+/// Clears log files older than the specified number of days.
 #[tauri::command]
 pub async fn clear_old_logs(days_to_keep: u32) -> Result<String, String> {
     info!("Clearing logs older than {} days", days_to_keep);
@@ -181,7 +176,7 @@ pub async fn clear_old_logs(days_to_keep: u32) -> Result<String, String> {
     Ok(message)
 }
 
-/// Get log statistics
+/// Retrieves statistics about log files (count, size, date ranges).
 #[tauri::command]
 pub async fn get_log_stats() -> Result<HashMap<String, serde_json::Value>, String> {
     debug!("Getting log statistics");
@@ -258,7 +253,7 @@ pub async fn get_log_stats() -> Result<HashMap<String, serde_json::Value>, Strin
     Ok(stats)
 }
 
-/// Create a test log entry
+/// Creates a test log entry at the specified level for debugging purposes.
 #[tauri::command]
 pub async fn create_test_log(level: String, message: String) -> Result<String, String> {
     let log_level: LogLevel = level.as_str().into();
@@ -274,7 +269,6 @@ pub async fn create_test_log(level: String, message: String) -> Result<String, S
     Ok(format!("Test log created: {} - {}", level, message))
 }
 
-// Helper functions
 
 fn get_log_directory() -> PathBuf {
     crate::logging::default_log_dir()
@@ -323,8 +317,6 @@ fn parse_log_content(content: &str, _params: &LogQueryParams) -> Vec<LogEntry> {
 }
 
 fn parse_plain_text_log(line: &str) -> Option<LogEntry> {
-    // Simple parser for plain text logs
-    // Expected format: TIMESTAMP LEVEL TARGET: MESSAGE
     let parts: Vec<&str> = line.splitn(4, ' ').collect();
     if parts.len() < 4 {
         return None;

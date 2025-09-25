@@ -1,8 +1,11 @@
+//! Application logging models and data structures.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+/// Application log entry stored in the database.
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct AppLog {
@@ -14,6 +17,7 @@ pub struct AppLog {
     pub created_at: DateTime<Utc>,
 }
 
+/// Request payload for creating a new log entry.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateAppLog {
@@ -23,6 +27,7 @@ pub struct CreateAppLog {
     pub user_id: Option<Uuid>,
 }
 
+/// Available log levels for filtering and categorization.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LogLevel {
@@ -34,6 +39,7 @@ pub enum LogLevel {
 }
 
 impl ToString for LogLevel {
+    /// Converts log level enum to string representation.
     fn to_string(&self) -> String {
         match self {
             LogLevel::Error => "error".to_string(),
@@ -45,6 +51,7 @@ impl ToString for LogLevel {
     }
 }
 
+/// Query parameters for filtering log entries.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogQuery {

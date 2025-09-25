@@ -1,36 +1,53 @@
+# Docker Compose configuration for development environment
+#
+# Sets up the complete development stack including:
+# - PostgreSQL database with initialization scripts
+# - Redis cache for session management and rate limiting
+# - Persistent volumes for data retention
+# - Custom network for service communication
+#
+# Usage:
+#   docker-compose up -d    # Start services in background
+#   docker-compose down     # Stop and remove containers
+#   docker-compose logs -f  # Follow logs from all services
+
 version: '3.8'
 
 services:
+  # PostgreSQL database service
   postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
+    image: postgres:16-alpine         # Latest stable PostgreSQL on Alpine Linux
+    restart: unless-stopped           # Auto-restart unless manually stopped
     environment:
-      POSTGRES_DB: tauri_app
-      POSTGRES_USER: tauri_user
-      POSTGRES_PASSWORD: tauri_password
+      POSTGRES_DB: ez_tauri                    # Database name
+      POSTGRES_USER: ez_tauri_user             # Database user
+      POSTGRES_PASSWORD: ez_tauri_secure_2024! # Database password (use .env in production)
     ports:
-      - "5432:5432"
+      - "5432:5432"                   # Expose PostgreSQL port to host
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - postgres_data:/var/lib/postgresql/data           # Persist database data
+      - ./database/init:/docker-entrypoint-initdb.d:ro  # Mount initialization scripts
     networks:
       - tauri_network
 
+  # Redis cache service for session management and rate limiting
   redis:
-    image: redis:7-alpine
-    restart: unless-stopped
+    image: redis:7-alpine             # Latest stable Redis on Alpine Linux
+    restart: unless-stopped           # Auto-restart unless manually stopped
     ports:
-      - "6379:6379"
+      - "6379:6379"                   # Expose Redis port to host
     volumes:
-      - redis_data:/data
+      - redis_data:/data               # Persist Redis data
     networks:
       - tauri_network
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes  # Enable AOF persistence for data durability
 
+# Named volumes for data persistence
 volumes:
-  postgres_data:
-  redis_data:
+  postgres_data:  # PostgreSQL data storage
+  redis_data:     # Redis data storage
 
+# Custom network for service communication
 networks:
   tauri_network:
-    driver: bridge
+    driver: bridge  # Bridge network for container-to-container communication

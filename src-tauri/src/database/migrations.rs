@@ -1,11 +1,14 @@
+//! Database migration management for creating and maintaining schema.
+
 use anyhow::Result;
 use sqlx::PgPool;
 
+/// Runs all database migrations to set up the application schema.
+///
+/// Creates tables for users, user settings, and application logs along with
+/// necessary indexes for performance. In production, consider using sqlx-cli
+/// for more sophisticated migration management.
 pub async fn run_migrations(pool: &PgPool) -> Result<()> {
-    // Note: In a real application, you would use sqlx-cli for migrations
-    // This is a simplified version for the boilerplate
-
-    // Execute each statement individually to avoid issues with multiple statements
     let migrations = [
         r#"CREATE EXTENSION IF NOT EXISTS "uuid-ossp""#,
 

@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { ThemeToggle } from '../components'
+import ErrorBoundary from '../components/ErrorBoundary'
 
 const navigation = [{ name: 'Home', to: '/' }]
 
@@ -9,7 +10,7 @@ const Layout = () => {
       <header className='border-b border-slate-200 dark:border-slate-800'>
         <div className='mx-auto flex max-w-4xl items-center justify-between px-4 py-5'>
           <NavLink to='/' className='text-lg font-semibold tracking-tight'>
-            tavuc-boilerplate
+            EZ Tauri
           </NavLink>
 
           <nav aria-label='Primary navigation'>
@@ -34,12 +35,14 @@ const Layout = () => {
             </ul>
           </nav>
 
-          <ThemeToggle className='ml-6' />
+          <ThemeToggle />
         </div>
       </header>
 
       <main className='mx-auto max-w-4xl px-4 py-10'>
-        <Outlet />
+        <ErrorBoundary name='Page Content' isolate>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   )

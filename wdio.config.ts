@@ -32,7 +32,7 @@ function resolveTauriProductName() {
       error
     )
   }
-  return 'tavuc-boilerplate'
+  return 'ez-tauri'
 }
 
 function resolveTauriBinaryPath() {

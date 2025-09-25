@@ -1,11 +1,17 @@
+//! Application log management command handlers.
+
 use crate::database::get_pool_ref;
 use crate::models::{AppLog, CreateAppLog, LogQuery};
+use crate::validation::{validate_log_level, validate_log_message};
 use sqlx::QueryBuilder;
 
+/// Creates a new application log entry in the database.
 #[tauri::command]
 pub async fn create_log(log_data: CreateAppLog) -> Result<AppLog, String> {
     let pool = get_pool_ref().map_err(|e| e.to_string())?;
 
+    let level = validate_log_level(&log_data.level).map_err(|e| format!("Invalid log level: {}", e))?;
+    let message = validate_log_message(&log_data.message).map_err(|e| format!("Invalid log message: {}", e))?;
     let metadata = log_data.metadata.unwrap_or_else(|| serde_json::json!({}));
 
     let log = sqlx::query_as::<_, AppLog>(
@@ -20,8 +26,8 @@ pub async fn create_log(log_data: CreateAppLog) -> Result<AppLog, String> {
                   created_at
         "#,
     )
-    .bind(log_data.level)
-    .bind(log_data.message)
+    .bind(level)
+    .bind(message)
     .bind(metadata)
     .bind(log_data.user_id)
     .fetch_one(pool.as_ref())

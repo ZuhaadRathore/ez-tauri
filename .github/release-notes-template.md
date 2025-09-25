@@ -1,4 +1,4 @@
-# 🚀 Tauri Boilerplate v{{VERSION}}
+# 🚀 EZ Tauri v{{VERSION}}
 
 {{GENERATED_NOTES}}
 
@@ -8,18 +8,18 @@
 
 ### Windows
 
-- **MSI Installer**: `tavuc-boilerplate_{{VERSION}}_x64_en-US.msi`
-- **EXE Installer**: `tavuc-boilerplate_{{VERSION}}_x64-setup.exe`
+- **MSI Installer**: `ez-tauri_{{VERSION}}_x64_en-US.msi`
+- **EXE Installer**: `ez-tauri_{{VERSION}}_x64-setup.exe`
 
 ### macOS
 
-- **Intel Macs**: `tavuc-boilerplate_{{VERSION}}_x64.dmg`
-- **Apple Silicon**: `tavuc-boilerplate_{{VERSION}}_aarch64.dmg`
+- **Intel Macs**: `ez-tauri_{{VERSION}}_x64.dmg`
+- **Apple Silicon**: `ez-tauri_{{VERSION}}_aarch64.dmg`
 
 ### Linux
 
-- **AppImage**: `tavuc-boilerplate_{{VERSION}}_amd64.AppImage`
-- **Debian/Ubuntu**: `tavuc-boilerplate_{{VERSION}}_amd64.deb`
+- **AppImage**: `ez-tauri_{{VERSION}}_amd64.AppImage`
+- **Debian/Ubuntu**: `ez-tauri_{{VERSION}}_amd64.deb`
 
 ## 🔍 Verification
 
