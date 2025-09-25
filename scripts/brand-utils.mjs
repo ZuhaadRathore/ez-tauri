@@ -45,12 +45,12 @@ export const colors = {
 
 // Simple 3D EZ-Tauri logo
 export const ezTauriLogo = `
-${colors.brightCyan}  ███████╗  ███████╗        ████████╗  █████╗  ██╗   ██╗ ██████╗  ██╗
-${colors.cyan}  ██╔════╝  ╚══███╔╝        ╚══██╔══╝ ██╔══██╗ ██║   ██║ ██╔══██╗ ██║
-${colors.brightBlue}  █████╗      ███╔╝            ██║    ███████║ ██║   ██║ ██████╔╝ ██║
-${colors.blue}  ██╔══╝    ███╔╝              ██║    ██╔══██║ ██║   ██║ ██╔══██╗ ██║
-${colors.brightMagenta}  ███████╗ ███████╗            ██║    ██║  ██║ ╚██████╔╝ ██║  ██║ ██║
-${colors.magenta}  ╚══════╝ ╚══════╝            ╚═╝    ╚═╝  ╚═╝  ╚═════╝  ╚═╝  ╚═╝ ╚═╝${colors.reset}
+${colors.brightCyan}███████╗███████╗    ████████╗ █████╗ ██╗   ██╗██████╗ ██╗
+${colors.cyan}██╔════╝╚══███╔╝    ╚══██╔══╝██╔══██╗██║   ██║██╔══██╗██║
+${colors.brightBlue}█████╗    ███╔╝ █████╗ ██║   ███████║██║   ██║██████╔╝██║
+${colors.blue}██╔══╝   ███╔╝  ╚════╝ ██║   ██╔══██║██║   ██║██╔══██╗██║
+${colors.brightMagenta}███████╗███████╗       ██║   ██║  ██║╚██████╔╝██║  ██║██║
+${colors.magenta}╚══════╝╚══════╝       ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝${colors.reset}
 `
 
 // Simple logo display function
