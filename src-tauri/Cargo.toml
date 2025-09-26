@@ -1,6 +1,6 @@
 [package]
 name = "ez-tauri"
-version = "0.1.0"
+version = "1.2.0"
 description = "A simple, powerful Tauri boilerplate for rapid desktop app development"
 authors = ["Tavuc"]
 edition = "2021"
