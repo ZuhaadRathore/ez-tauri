@@ -1,0 +1,16 @@
+{
+  "database": {
+    "module_id": "database",
+    "enabled": true,
+    "config": {},
+    "dependency_overrides": {}
+  },
+  "auth": {
+    "module_id": "auth",
+    "enabled": true,
+    "config": {
+      "jwt_expiry_hours": 48
+    },
+    "dependency_overrides": {}
+  }
+}

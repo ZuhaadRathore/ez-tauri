@@ -64,6 +64,7 @@
     "version:minor": "npm version minor && npm run release:prepare",
     "version:major": "npm version major && npm run release:prepare",
     "template:process": "node scripts/process-template.mjs",
+    "modules": "node scripts/ez-modules.mjs",
     "build:prod": "NODE_ENV=production npm run build",
     "build:staging": "NODE_ENV=staging npm run build",
     "deploy:staging": "node scripts/ez-deploy.mjs staging",

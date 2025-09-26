@@ -1,0 +1,90 @@
+{
+  "id": "logging",
+  "name": "Logging Module",
+  "description": "Comprehensive logging system with file rotation, structured logging, and configurable log levels.",
+  "version": "1.0.0",
+  "authors": ["Tavuc"],
+  "license": "MIT",
+  "homepage": "https://github.com/ZuhaadRathore/ez-tauri",
+  "repository": "https://github.com/ZuhaadRathore/ez-tauri.git",
+  "dependencies": [],
+  "commands": [
+    "rl_create_log",
+    "rl_get_logs",
+    "rl_delete_old_logs",
+    "rl_get_log_config",
+    "rl_update_log_config",
+    "rl_get_log_entries",
+    "rl_clear_old_logs",
+    "rl_get_log_stats",
+    "rl_create_test_log"
+  ],
+  "frontend_components": [
+    "LogViewer",
+    "LogConfiguration",
+    "LogStats",
+    "LogSearch"
+  ],
+  "migrations": ["001_create_logs_table.sql"],
+  "config_schema": {
+    "log_level": {
+      "field_type": "string",
+      "description": "Minimum log level to record",
+      "default": "info",
+      "required": false,
+      "enum_values": ["trace", "debug", "info", "warn", "error"]
+    },
+    "file_logging": {
+      "field_type": "boolean",
+      "description": "Enable logging to files",
+      "default": true,
+      "required": false
+    },
+    "console_logging": {
+      "field_type": "boolean",
+      "description": "Enable console logging",
+      "default": true,
+      "required": false
+    },
+    "max_file_size_mb": {
+      "field_type": "number",
+      "description": "Maximum log file size in MB before rotation",
+      "default": 10,
+      "required": false,
+      "min": 1,
+      "max": 100
+    },
+    "max_files": {
+      "field_type": "number",
+      "description": "Maximum number of log files to keep",
+      "default": 5,
+      "required": false,
+      "min": 1,
+      "max": 50
+    },
+    "structured_logging": {
+      "field_type": "boolean",
+      "description": "Use structured JSON logging",
+      "default": false,
+      "required": false
+    },
+    "include_thread_names": {
+      "field_type": "boolean",
+      "description": "Include thread names in log entries",
+      "default": true,
+      "required": false
+    },
+    "timezone": {
+      "field_type": "string",
+      "description": "Timezone for log timestamps",
+      "default": "UTC",
+      "required": false,
+      "pattern": "^[A-Z]{3}$|^UTC$"
+    }
+  },
+  "platforms": ["windows", "macos", "linux"],
+  "min_tauri_version": "2.0.0",
+  "can_disable": false,
+  "category": "Logging",
+  "tags": ["logging", "tracing", "debugging", "monitoring", "files"]
+}
