@@ -1,0 +1,71 @@
+{
+  "id": "database",
+  "name": "Database Module",
+  "description": "PostgreSQL database management with connection pooling, migrations, and automated backup support.",
+  "version": "1.0.0",
+  "authors": ["Tavuc"],
+  "license": "MIT",
+  "homepage": "https://github.com/ZuhaadRathore/ez-tauri",
+  "repository": "https://github.com/ZuhaadRathore/ez-tauri.git",
+  "dependencies": [],
+  "commands": [
+    "rl_check_database_connection",
+    "rl_initialize_database",
+    "rl_run_migrations"
+  ],
+  "frontend_components": [
+    "DatabaseStatus",
+    "MigrationManager",
+    "ConnectionMonitor"
+  ],
+  "migrations": ["000_initial_schema.sql"],
+  "config_schema": {
+    "database_url": {
+      "field_type": "string",
+      "description": "PostgreSQL connection URL",
+      "required": true,
+      "pattern": "^postgresql://.+"
+    },
+    "max_connections": {
+      "field_type": "number",
+      "description": "Maximum number of database connections in pool",
+      "default": 10,
+      "required": false,
+      "min": 1,
+      "max": 100
+    },
+    "connection_timeout": {
+      "field_type": "number",
+      "description": "Connection timeout in seconds",
+      "default": 30,
+      "required": false,
+      "min": 5,
+      "max": 300
+    },
+    "auto_migrate": {
+      "field_type": "boolean",
+      "description": "Automatically run migrations on startup",
+      "default": true,
+      "required": false
+    },
+    "backup_enabled": {
+      "field_type": "boolean",
+      "description": "Enable automatic database backups",
+      "default": false,
+      "required": false
+    },
+    "backup_interval_hours": {
+      "field_type": "number",
+      "description": "Backup interval in hours",
+      "default": 24,
+      "required": false,
+      "min": 1,
+      "max": 168
+    }
+  },
+  "platforms": ["windows", "macos", "linux"],
+  "min_tauri_version": "2.0.0",
+  "can_disable": false,
+  "category": "Database",
+  "tags": ["database", "postgresql", "sqlx", "migrations", "persistence"]
+}

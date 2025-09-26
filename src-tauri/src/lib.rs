@@ -14,6 +14,7 @@ mod rate_limiter;
 mod rate_limiter_test;
 mod validation;
 
+mod modules;
 use config::AppConfig;
 use handlers::*;
 use rate_limiter::RateLimiterConfig;
@@ -59,6 +60,7 @@ pub fn run() {
             let rate_limiter = Arc::new(RateLimiterConfig::new());
             app.manage(rate_limiter.clone());
             tracing::info!("Rate limiter initialized successfully");
+
 
             if let Err(e) = logging::init_logging_from_env() {
                 eprintln!("Failed to initialize logging: {}", e);

@@ -1,0 +1,69 @@
+{
+  "id": "cache",
+  "name": "Cache Module",
+  "description": "Redis-based caching with graceful fallbacks and automatic key expiration management.",
+  "version": "1.0.0",
+  "authors": ["Tavuc"],
+  "license": "MIT",
+  "homepage": "https://github.com/ZuhaadRathore/ez-tauri",
+  "repository": "https://github.com/ZuhaadRathore/ez-tauri.git",
+  "dependencies": [],
+  "commands": [
+    "rl_set_cache_value",
+    "rl_get_cache_value",
+    "rl_delete_cache_value",
+    "rl_cache_key_exists",
+    "rl_is_cache_available"
+  ],
+  "frontend_components": ["CacheStatus", "CacheStats", "CacheManager"],
+  "migrations": [],
+  "config_schema": {
+    "redis_url": {
+      "field_type": "string",
+      "description": "Redis connection URL",
+      "default": "redis://localhost:6379",
+      "required": false,
+      "pattern": "^redis://.+"
+    },
+    "default_ttl": {
+      "field_type": "number",
+      "description": "Default time-to-live for cache entries in seconds",
+      "default": 3600,
+      "required": false,
+      "min": 60,
+      "max": 86400
+    },
+    "max_memory_mb": {
+      "field_type": "number",
+      "description": "Maximum memory usage in MB",
+      "default": 128,
+      "required": false,
+      "min": 16,
+      "max": 1024
+    },
+    "enable_fallback": {
+      "field_type": "boolean",
+      "description": "Enable in-memory fallback when Redis is unavailable",
+      "default": true,
+      "required": false
+    },
+    "compression_enabled": {
+      "field_type": "boolean",
+      "description": "Enable value compression for large entries",
+      "default": false,
+      "required": false
+    },
+    "key_prefix": {
+      "field_type": "string",
+      "description": "Prefix for all cache keys",
+      "default": "ez-tauri:",
+      "required": false,
+      "pattern": "^[a-zA-Z0-9_-]+:?$"
+    }
+  },
+  "platforms": ["windows", "macos", "linux"],
+  "min_tauri_version": "2.0.0",
+  "can_disable": true,
+  "category": "Caching",
+  "tags": ["cache", "redis", "performance", "memory", "storage"]
+}

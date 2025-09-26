@@ -1,0 +1,80 @@
+{
+  "id": "auth",
+  "name": "Authentication Module",
+  "description": "Provides user authentication, registration, and session management with secure password hashing and JWT token support.",
+  "version": "1.0.0",
+  "authors": ["Tavuc"],
+  "license": "MIT",
+  "homepage": "https://github.com/ZuhaadRathore/ez-tauri",
+  "repository": "https://github.com/ZuhaadRathore/ez-tauri.git",
+  "dependencies": [
+    {
+      "module_id": "database",
+      "version_req": "^1.0.0",
+      "optional": false
+    }
+  ],
+  "commands": [
+    "rl_authenticate_user",
+    "rl_create_user",
+    "rl_get_user_by_id",
+    "rl_get_all_users",
+    "rl_update_user",
+    "rl_delete_user"
+  ],
+  "frontend_components": [
+    "LoginForm",
+    "RegisterForm",
+    "UserProfile",
+    "AuthProvider"
+  ],
+  "migrations": ["001_create_users_table.sql", "002_add_user_indexes.sql"],
+  "config_schema": {
+    "jwt_secret": {
+      "field_type": "string",
+      "description": "Secret key for JWT token signing",
+      "required": true,
+      "pattern": "^[A-Za-z0-9+/=]{32,}$"
+    },
+    "jwt_expiry_hours": {
+      "field_type": "number",
+      "description": "JWT token expiry time in hours",
+      "default": 24,
+      "required": false,
+      "min": 1,
+      "max": 168
+    },
+    "password_min_length": {
+      "field_type": "number",
+      "description": "Minimum password length",
+      "default": 8,
+      "required": false,
+      "min": 6,
+      "max": 128
+    },
+    "enable_registration": {
+      "field_type": "boolean",
+      "description": "Allow new user registration",
+      "default": true,
+      "required": false
+    },
+    "require_email_verification": {
+      "field_type": "boolean",
+      "description": "Require email verification for new accounts",
+      "default": false,
+      "required": false
+    },
+    "hash_algorithm": {
+      "field_type": "string",
+      "description": "Password hashing algorithm",
+      "default": "argon2",
+      "required": false,
+      "enum_values": ["argon2", "bcrypt", "scrypt"]
+    }
+  },
+  "platforms": ["windows", "macos", "linux"],
+  "min_tauri_version": "2.0.0",
+  "can_disable": true,
+  "category": "Authentication",
+  "tags": ["authentication", "security", "users", "jwt", "passwords"]
+}
