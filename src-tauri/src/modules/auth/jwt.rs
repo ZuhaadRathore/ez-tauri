@@ -39,7 +39,7 @@ impl JwtService {
     pub fn new(secret: String) -> Self {
         Self {
             secret,
-            access_token_expiry_hours: 24,      // 24 hours for access tokens
+            access_token_expiry_hours: 1,       // 1 hour for access tokens (improved security)
             refresh_token_expiry_days: 30,      // 30 days for refresh tokens
         }
     }
