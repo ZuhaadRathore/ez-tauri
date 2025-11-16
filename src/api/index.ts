@@ -5,5 +5,6 @@
  * organized by functional domain (database, system, etc.).
  */
 
+export * from './auth' // Authentication and session management
 export * from './database' // Database operations and health checks
 export * from './system' // System information and utilities

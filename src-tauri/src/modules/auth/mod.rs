@@ -1,12 +1,25 @@
 //! Authentication module
 //!
-//! Provides user authentication, registration, and session management.
+//! Provides comprehensive user authentication with JWT tokens, session management,
+//! and secure password handling.
+//!
+//! ## Features
+//! - User registration and login
+//! - JWT-based access and refresh tokens
+//! - Session management with database persistence
+//! - Token refresh without re-authentication
+//! - Multi-device session support
+//! - Session revocation (logout from single or all devices)
 
 pub mod handlers;
+pub mod jwt;
 pub mod models;
+pub mod session;
 
 pub use handlers::*;
+pub use jwt::{Claims, JwtError, JwtService, TokenPair, TokenType};
 pub use models::*;
+pub use session::{Session, SessionError, SessionInfo, SessionManager};
 
 use serde::{Deserialize, Serialize};
 
@@ -23,12 +36,12 @@ pub struct AuthConfig {
 impl Default for AuthConfig {
     fn default() -> Self {
         Self {
-            jwt_secret: "your-secret-key-here".to_string(),
+            jwt_secret: "your-secret-key-here-change-in-production-min-32-chars!".to_string(),
             jwt_expiry_hours: 24,
             password_min_length: 8,
             enable_registration: true,
             require_email_verification: false,
-            hash_algorithm: "argon2".to_string(),
+            hash_algorithm: "bcrypt".to_string(),
         }
     }
 }
