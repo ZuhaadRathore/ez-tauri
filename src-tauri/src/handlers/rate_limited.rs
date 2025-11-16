@@ -362,11 +362,27 @@ pub async fn rl_greet(
     Ok(format!("Hello, {}! You've been greeted from Rust!", name))
 }
 
+/// Rate limiter status information
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RateLimiterStatus {
+    pub active: bool,
+    pub global_limit_per_minute: u32,
+    pub user_limit_per_minute: u32,
+    pub description: String,
+}
+
 // Rate limiter status command for monitoring
 #[tauri::command]
 pub async fn get_rate_limiter_status(
     _rate_limiter: State<'_, Arc<RateLimiterConfig>>,
-) -> Result<String, String> {
+) -> Result<RateLimiterStatus, String> {
     // This command itself doesn't need rate limiting as it's for monitoring
-    Ok("Rate limiter is active and protecting all commands".to_string())
+    Ok(RateLimiterStatus {
+        active: true,
+        global_limit_per_minute: 100, // From RateLimiterConfig::new()
+        user_limit_per_minute: 10,    // From RateLimiterConfig::new()
+        description: "Rate limiter is active and protecting all commands".to_string(),
+    })
 }

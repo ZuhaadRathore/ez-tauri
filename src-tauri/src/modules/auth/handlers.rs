@@ -60,12 +60,17 @@ pub struct RefreshTokenResponse {
 /// Get JWT service instance with secret from environment
 fn get_jwt_service() -> JwtService {
     let secret = env::var("JWT_SECRET")
-        .unwrap_or_else(|_| "default-secret-change-in-production-min-32-chars!".to_string());
+        .expect("JWT_SECRET environment variable must be set. Generate a secure secret with: openssl rand -base64 32");
+
+    // Validate secret length for security
+    if secret.len() < 32 {
+        panic!("JWT_SECRET must be at least 32 characters long for security. Current length: {}", secret.len());
+    }
 
     let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or(24);
+        .unwrap_or(1); // Default to 1 hour for better security
 
     let refresh_days = env::var("JWT_REFRESH_TOKEN_DAYS")
         .ok()
@@ -148,11 +153,16 @@ pub async fn auth_register(request: RegisterRequest) -> AppResult<LoginResponse>
 
     tracing::info!("User registered successfully: {}", user.id);
 
+    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(1);
+
     Ok(LoginResponse {
         access_token: token_pair.access_token,
         refresh_token: token_pair.refresh_token,
         user: PublicUser::from(user),
-        expires_in: 24 * 3600, // 24 hours in seconds
+        expires_in: access_hours * 3600, // Convert hours to seconds
     })
 }
 
@@ -216,11 +226,16 @@ pub async fn auth_login(request: LoginRequest) -> AppResult<LoginResponse> {
 
     tracing::info!("User logged in successfully: {}", user.id);
 
+    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(1);
+
     Ok(LoginResponse {
         access_token: token_pair.access_token,
         refresh_token: token_pair.refresh_token,
         user: PublicUser::from(user),
-        expires_in: 24 * 3600, // 24 hours in seconds
+        expires_in: access_hours * 3600, // Convert hours to seconds
     })
 }
 
@@ -274,10 +289,15 @@ pub async fn auth_refresh_token(request: RefreshTokenRequest) -> AppResult<Refre
 
     tracing::debug!("Token refreshed successfully for user: {}", user_id);
 
+    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(1);
+
     Ok(RefreshTokenResponse {
         access_token,
         refresh_token: request.refresh_token, // Return same refresh token
-        expires_in: 24 * 3600,                 // 24 hours in seconds
+        expires_in: access_hours * 3600,      // Convert hours to seconds
     })
 }
 
@@ -401,9 +421,14 @@ pub async fn auth_revoke_session(access_token: String, session_id: String) -> Ap
         .map_err(|e| AppError::validation_error(format!("Invalid session ID: {}", e)))?;
 
     // Verify session belongs to user before revoking
-    let session = SessionManager::find_by_refresh_token(pool.as_ref(), "")
+    let user_sessions = SessionManager::get_user_sessions(pool.as_ref(), user_id)
         .await
-        .ok();
+        .map_err(|e| AppError::database_error(format!("Failed to verify session ownership: {}", e)))?;
+
+    // Check if the session ID belongs to this user
+    if !user_sessions.iter().any(|s| s.id.to_string() == session_id) {
+        return Err(AppError::forbidden("Session does not belong to user"));
+    }
 
     // Revoke the session
     SessionManager::revoke_session(pool.as_ref(), session_uuid)

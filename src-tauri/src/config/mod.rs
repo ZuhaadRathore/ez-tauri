@@ -81,4 +81,65 @@ impl AppConfig {
     pub fn is_production(&self) -> bool {
         matches!(self.environment, AppEnvironment::Production)
     }
+
+    /// Validates production configuration to ensure security requirements are met.
+    ///
+    /// This should be called during application startup to fail fast if critical
+    /// configuration is missing or insecure.
+    pub fn validate_production_config() -> Result<(), String> {
+        let environment = env::var("APP_ENV")
+            .unwrap_or_else(|_| "development".to_string())
+            .into();
+
+        // Only validate in production/staging environments
+        if !matches!(environment, AppEnvironment::Production | AppEnvironment::Staging) {
+            return Ok(());
+        }
+
+        let env_name = match environment {
+            AppEnvironment::Production => "production",
+            AppEnvironment::Staging => "staging",
+            _ => "unknown",
+        };
+
+        tracing::info!("Validating configuration for {} environment", env_name);
+
+        // Validate JWT_SECRET
+        match env::var("JWT_SECRET") {
+            Ok(secret) => {
+                if secret.len() < 32 {
+                    return Err(format!(
+                        "JWT_SECRET must be at least 32 characters in {} (current: {} chars). Generate with: openssl rand -base64 32",
+                        env_name, secret.len()
+                    ));
+                }
+                // Check if using the placeholder value
+                if secret.contains("your-secret-key-here") || secret.contains("change-in-production") {
+                    return Err(format!(
+                        "JWT_SECRET appears to use a placeholder value in {}. Generate a proper secret with: openssl rand -base64 32",
+                        env_name
+                    ));
+                }
+            }
+            Err(_) => {
+                return Err(format!(
+                    "JWT_SECRET environment variable must be set in {}. Generate with: openssl rand -base64 32",
+                    env_name
+                ));
+            }
+        }
+
+        // Validate DATABASE_URL
+        if env::var("DATABASE_URL").is_err() {
+            return Err(format!("DATABASE_URL must be set in {}", env_name));
+        }
+
+        // Warn about missing REDIS_URL but don't fail (it's optional)
+        if env::var("REDIS_URL").is_err() {
+            tracing::warn!("REDIS_URL not set in {} - caching will be disabled", env_name);
+        }
+
+        tracing::info!("Configuration validation passed for {} environment", env_name);
+        Ok(())
+    }
 }

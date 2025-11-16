@@ -66,6 +66,11 @@ pub fn run() {
             let config = AppConfig::from_env();
             tracing::info!("App environment: {:?}", config.environment);
 
+            // Validate production configuration
+            if let Err(e) = AppConfig::validate_production_config() {
+                panic!("Configuration validation failed: {}", e);
+            }
+
             let rate_limiter = Arc::new(RateLimiterConfig::new());
             app.manage(rate_limiter.clone());
             tracing::info!("Rate limiter initialized successfully");
@@ -108,6 +113,26 @@ pub fn run() {
                     interval.tick().await;
                     rate_limiter_cleanup.cleanup_old_limiters();
                     tracing::debug!("Cleaned up old rate limiters");
+                }
+            });
+
+            // Spawn background task for periodic session cleanup
+            tauri::async_runtime::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(86400)); // Run daily
+                loop {
+                    interval.tick().await;
+                    if let Ok(pool) = database::get_pool_ref() {
+                        match modules::auth::session::SessionManager::cleanup_expired_sessions(pool.as_ref()).await {
+                            Ok(count) => {
+                                tracing::info!("Session cleanup: removed {} expired sessions", count);
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to cleanup expired sessions: {}", e);
+                            }
+                        }
+                    } else {
+                        tracing::warn!("Database not initialized, skipping session cleanup");
+                    }
                 }
             });
 
