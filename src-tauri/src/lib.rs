@@ -150,7 +150,16 @@ pub fn run() {
             rl_delete_cache_value,
             rl_cache_key_exists,
             rl_is_cache_available,
-            get_rate_limiter_status
+            get_rate_limiter_status,
+            // Authentication commands
+            modules::auth::auth_register,
+            modules::auth::auth_login,
+            modules::auth::auth_logout,
+            modules::auth::auth_logout_all,
+            modules::auth::auth_refresh_token,
+            modules::auth::auth_verify_token,
+            modules::auth::auth_get_sessions,
+            modules::auth::auth_revoke_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
