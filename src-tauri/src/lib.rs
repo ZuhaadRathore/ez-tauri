@@ -46,10 +46,19 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_stronghold::Builder::new(|password| {
             use argon2::{Algorithm, Argon2, Params, Version};
+            use sha2::{Sha256, Digest};
+
             let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, Params::default());
-            let salt = &[0; 32];
+
+            // Derive a unique salt from the password using SHA-256
+            // This ensures different passwords produce different salts
+            let mut hasher = Sha256::new();
+            hasher.update(password.as_bytes());
+            hasher.update(b"ez-tauri-stronghold-salt-v1"); // Application-specific domain separator
+            let salt = hasher.finalize();
+
             let mut output = [0u8; 32];
-            argon2.hash_password_into(password.as_bytes(), salt, &mut output)
+            argon2.hash_password_into(password.as_bytes(), &salt, &mut output)
                 .expect("failed to hash password");
             output.to_vec()
         }).build())
