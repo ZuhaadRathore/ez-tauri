@@ -6,7 +6,7 @@ mod cache;
 mod config;
 mod database;
 mod errors;
-mod handlers;
+pub mod handlers;
 mod logging;
 mod models;
 mod rate_limiter;
@@ -14,7 +14,7 @@ mod rate_limiter;
 mod rate_limiter_test;
 mod validation;
 
-mod modules;
+pub mod modules;
 use config::AppConfig;
 use handlers::*;
 use rate_limiter::RateLimiterConfig;

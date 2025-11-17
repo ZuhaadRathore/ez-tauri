@@ -1,11 +1,14 @@
 //! System information and utility command handlers.
 
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use tauri::{AppHandle, Manager, Window};
 use tauri_plugin_notification::{NotificationExt, PermissionState};
 
 /// System information structure.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct SystemInfo {
     pub platform: String,
     pub arch: String,
@@ -14,7 +17,9 @@ pub struct SystemInfo {
 }
 
 /// Window information and state structure.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct WindowInfo {
     pub label: String,
     pub title: String,
