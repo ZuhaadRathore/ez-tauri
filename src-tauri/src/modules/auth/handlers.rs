@@ -2,8 +2,8 @@
 
 use super::jwt::{JwtError, JwtService, TokenPair};
 use super::session::{SessionError, SessionInfo, SessionManager};
-use crate::database::get_pool_ref;
-use crate::errors::{AppError, AppResult, ErrorCode, IntoAppError};
+use crate::database::Database;
+use crate::errors::{AppError, AppResult, ErrorCode};
 use crate::models::{CreateUser, PublicUser, User};
 use crate::validation::{validate_email, validate_optional_name, validate_username};
 use bcrypt::{hash, verify, DEFAULT_COST};
@@ -67,13 +67,13 @@ pub struct RefreshTokenResponse {
 /// Register a new user account
 #[tauri::command]
 pub async fn auth_register(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     request: RegisterRequest,
 ) -> AppResult<LoginResponse> {
     tracing::info!("Registration attempt for email: {}", request.email);
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate input
     let email = validate_email(&request.email)
@@ -110,7 +110,7 @@ pub async fn auth_register(
     .bind(&password_hash)
     .bind(&first_name)
     .bind(&last_name)
-    .fetch_one(pool.as_ref())
+    .fetch_one(pool)
     .await
     .map_err(|e| {
         if e.to_string().contains("unique") {
@@ -127,7 +127,7 @@ pub async fn auth_register(
 
     // Create session
     SessionManager::create_session(
-        pool.as_ref(),
+        pool,
         user.id,
         &token_pair.refresh_token,
         None, // device_info
@@ -150,13 +150,13 @@ pub async fn auth_register(
 /// Authenticate a user and return tokens
 #[tauri::command]
 pub async fn auth_login(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     request: LoginRequest,
 ) -> AppResult<LoginResponse> {
     tracing::info!("Login attempt for user: {}", request.email);
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate email format
     let email = validate_email(&request.email)
@@ -171,9 +171,9 @@ pub async fn auth_login(
         "#,
     )
     .bind(&email)
-    .fetch_optional(pool.as_ref())
+    .fetch_optional(pool)
     .await
-    .into_app_error(ErrorCode::DatabaseQuery)?
+    .map_err(|e| AppError::new(ErrorCode::DatabaseQuery, e.to_string()))?
     .ok_or_else(|| AppError::unauthorized("Invalid email or password"))?;
 
     // Check if user is active
@@ -197,7 +197,7 @@ pub async fn auth_login(
 
     // Create session with device info
     SessionManager::create_session(
-        pool.as_ref(),
+        pool,
         user.id,
         &token_pair.refresh_token,
         request.device_info,
@@ -220,13 +220,13 @@ pub async fn auth_login(
 /// Refresh access token using refresh token
 #[tauri::command]
 pub async fn auth_refresh_token(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     request: RefreshTokenRequest,
 ) -> AppResult<RefreshTokenResponse> {
     tracing::debug!("Token refresh attempt");
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate refresh token using managed state
     let claims = jwt_service
@@ -240,7 +240,7 @@ pub async fn auth_refresh_token(
         })?;
 
     // Find and validate session
-    let session = SessionManager::find_by_refresh_token(pool.as_ref(), &request.refresh_token)
+    let session = SessionManager::find_by_refresh_token(pool, &request.refresh_token)
         .await
         .map_err(|e| match e {
             SessionError::NotFound => AppError::unauthorized("Session not found"),
@@ -254,7 +254,7 @@ pub async fn auth_refresh_token(
     }
 
     // Update session last used time
-    SessionManager::update_last_used(pool.as_ref(), session.id)
+    SessionManager::update_last_used(pool, session.id)
         .await
         .map_err(|e| AppError::database_error(format!("Failed to update session: {}", e)))?;
 
@@ -278,14 +278,16 @@ pub async fn auth_refresh_token(
 
 /// Logout and revoke current session
 #[tauri::command]
-pub async fn auth_logout(refresh_token: String) -> AppResult<()> {
+pub async fn auth_logout(
+    db: State<'_, Database>,
+    refresh_token: String,
+) -> AppResult<()> {
     tracing::info!("Logout attempt");
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Revoke the session
-    SessionManager::revoke_by_token(pool.as_ref(), &refresh_token)
+    SessionManager::revoke_by_token(pool, &refresh_token)
         .await
         .map_err(|e| AppError::database_error(format!("Failed to revoke session: {}", e)))?;
 
@@ -296,13 +298,13 @@ pub async fn auth_logout(refresh_token: String) -> AppResult<()> {
 /// Logout from all devices (revoke all sessions)
 #[tauri::command]
 pub async fn auth_logout_all(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     access_token: String,
 ) -> AppResult<()> {
     tracing::info!("Logout all devices attempt");
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate access token and get user ID using managed state
     let claims = jwt_service
@@ -313,7 +315,7 @@ pub async fn auth_logout_all(
         .map_err(|e| AppError::internal_error(format!("Invalid user ID: {}", e)))?;
 
     // Revoke all user sessions
-    SessionManager::revoke_all_user_sessions(pool.as_ref(), user_id)
+    SessionManager::revoke_all_user_sessions(pool, user_id)
         .await
         .map_err(|e| AppError::database_error(format!("Failed to revoke sessions: {}", e)))?;
 
@@ -324,11 +326,11 @@ pub async fn auth_logout_all(
 /// Check if access token is valid
 #[tauri::command]
 pub async fn auth_verify_token(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     access_token: String,
 ) -> AppResult<PublicUser> {
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate token using managed state
     let claims = jwt_service
@@ -350,9 +352,9 @@ pub async fn auth_verify_token(
         "#,
     )
     .bind(user_id)
-    .fetch_optional(pool.as_ref())
+    .fetch_optional(pool)
     .await
-    .into_app_error(ErrorCode::DatabaseQuery)?
+    .map_err(|e| AppError::new(ErrorCode::DatabaseQuery, e.to_string()))?
     .ok_or_else(|| AppError::unauthorized("User not found or inactive"))?;
 
     Ok(PublicUser::from(user))
@@ -361,11 +363,11 @@ pub async fn auth_verify_token(
 /// Get all active sessions for the current user
 #[tauri::command]
 pub async fn auth_get_sessions(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     access_token: String,
 ) -> AppResult<Vec<SessionInfo>> {
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate token and get user ID using managed state
     let claims = jwt_service
@@ -376,7 +378,7 @@ pub async fn auth_get_sessions(
         .map_err(|e| AppError::internal_error(format!("Invalid user ID: {}", e)))?;
 
     // Get user sessions
-    let sessions = SessionManager::get_user_sessions(pool.as_ref(), user_id)
+    let sessions = SessionManager::get_user_sessions(pool, user_id)
         .await
         .map_err(|e| AppError::database_error(format!("Failed to get sessions: {}", e)))?;
 
@@ -386,12 +388,12 @@ pub async fn auth_get_sessions(
 /// Revoke a specific session by ID
 #[tauri::command]
 pub async fn auth_revoke_session(
+    db: State<'_, Database>,
     jwt_service: State<'_, JwtService>,
     access_token: String,
     session_id: String,
 ) -> AppResult<()> {
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
     // Validate token and get user ID using managed state
     let claims = jwt_service
@@ -405,7 +407,7 @@ pub async fn auth_revoke_session(
         .map_err(|e| AppError::validation_error(format!("Invalid session ID: {}", e)))?;
 
     // Verify session belongs to user before revoking
-    let user_sessions = SessionManager::get_user_sessions(pool.as_ref(), user_id)
+    let user_sessions = SessionManager::get_user_sessions(pool, user_id)
         .await
         .map_err(|e| AppError::database_error(format!("Failed to verify session ownership: {}", e)))?;
 
@@ -415,7 +417,7 @@ pub async fn auth_revoke_session(
     }
 
     // Revoke the session
-    SessionManager::revoke_session(pool.as_ref(), session_uuid)
+    SessionManager::revoke_session(pool, session_uuid)
         .await
         .map_err(|e| AppError::database_error(format!("Failed to revoke session: {}", e)))?;
 

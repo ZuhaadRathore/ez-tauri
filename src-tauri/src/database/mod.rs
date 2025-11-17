@@ -13,7 +13,7 @@ pub mod migrations;
 #[cfg(test)]
 pub mod test_utils;
 
-pub use connection::*;
+pub use connection::Database;
 
 /// Creates a database connection pool using configuration from environment.
 pub async fn create_pool() -> Result<PgPool> {

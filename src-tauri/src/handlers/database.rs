@@ -1,10 +1,11 @@
 //! Database connection and health check handlers.
 
-use crate::database::{get_pool_ref, test_connection};
-use crate::errors::{AppError, AppResult, ErrorCode, IntoAppError};
+use crate::database::{Database, test_connection};
+use crate::errors::{AppError, AppResult, ErrorCode};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use tauri::State;
 
 /// Database connection status information.
 #[derive(Debug, Serialize, Deserialize, Type)]
@@ -19,18 +20,17 @@ pub struct DatabaseStatus {
 
 /// Checks database connectivity and returns connection status information.
 #[tauri::command]
-pub async fn check_database_connection() -> Result<DatabaseStatus, AppError> {
+pub async fn check_database_connection(db: State<'_, Database>) -> Result<DatabaseStatus, AppError> {
     tracing::info!("Checking database connection");
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
-    match test_connection(pool.as_ref()).await {
+    match test_connection(pool).await {
         Ok(_) => {
             let db_info_result = sqlx::query_as::<_, (String, String)>(
                 "SELECT current_database(), version()"
             )
-            .fetch_one(pool.as_ref())
+            .fetch_one(pool)
             .await;
 
             match db_info_result {
@@ -79,15 +79,14 @@ pub async fn initialize_database() -> AppResult<String> {
 }
 
 #[tauri::command]
-pub async fn run_migrations() -> AppResult<String> {
+pub async fn run_migrations(db: State<'_, Database>) -> AppResult<String> {
     tracing::info!("Running database migrations");
 
-    let pool = get_pool_ref()
-        .into_app_error(ErrorCode::DatabaseConnection)?;
+    let pool = db.pool();
 
-    crate::database::migrations::run_migrations(pool.as_ref())
+    crate::database::migrations::run_migrations(pool)
         .await
-        .into_app_error(ErrorCode::DatabaseMigration)
+        .map_err(|e| AppError::new(ErrorCode::DatabaseMigration, e.to_string()))
         .map(|_| {
             tracing::info!("Migrations completed successfully");
             "Migrations completed successfully".to_string()
