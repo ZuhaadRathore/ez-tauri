@@ -4,6 +4,7 @@ use crate::database::get_pool_ref;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -48,8 +49,18 @@ impl Session {
 /// Session manager for database operations
 pub struct SessionManager;
 
+/// Hash a refresh token using SHA-256
+/// This ensures tokens are not stored in plaintext in the database
+fn hash_refresh_token(token: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    let result = hasher.finalize();
+    format!("{:x}", result)
+}
+
 impl SessionManager {
     /// Create a new session in the database
+    /// The refresh token is hashed before storage for security
     pub async fn create_session(
         pool: &PgPool,
         user_id: Uuid,
@@ -58,9 +69,12 @@ impl SessionManager {
         ip_address: Option<String>,
         expiry_days: i64,
     ) -> Result<Session, SessionError> {
+        // Hash the refresh token before storing
+        let token_hash = hash_refresh_token(refresh_token);
+
         let session = Session::new(
             user_id,
-            refresh_token.to_string(),
+            token_hash.clone(),
             device_info,
             ip_address,
             expiry_days,
@@ -88,10 +102,14 @@ impl SessionManager {
     }
 
     /// Find a session by refresh token
+    /// The provided token is hashed and compared with stored hashes
     pub async fn find_by_refresh_token(
         pool: &PgPool,
         refresh_token: &str,
     ) -> Result<Option<Session>, SessionError> {
+        // Hash the provided token to compare with stored hash
+        let token_hash = hash_refresh_token(refresh_token);
+
         sqlx::query_as::<_, Session>(
             r#"
             SELECT id, user_id, refresh_token, device_info, ip_address, created_at, expires_at, last_used_at, revoked
@@ -99,7 +117,7 @@ impl SessionManager {
             WHERE refresh_token = $1 AND revoked = false AND expires_at > NOW()
             "#,
         )
-        .bind(refresh_token)
+        .bind(token_hash)
         .fetch_optional(pool)
         .await
         .map_err(|e| SessionError::DatabaseError(e.to_string()))
@@ -146,10 +164,14 @@ impl SessionManager {
     }
 
     /// Revoke a session by refresh token
+    /// The provided token is hashed before lookup
     pub async fn revoke_by_token(
         pool: &PgPool,
         refresh_token: &str,
     ) -> Result<(), SessionError> {
+        // Hash the provided token to find the session
+        let token_hash = hash_refresh_token(refresh_token);
+
         sqlx::query(
             r#"
             UPDATE sessions
@@ -157,7 +179,7 @@ impl SessionManager {
             WHERE refresh_token = $1
             "#,
         )
-        .bind(refresh_token)
+        .bind(token_hash)
         .execute(pool)
         .await
         .map_err(|e| SessionError::DatabaseError(e.to_string()))?;
@@ -299,5 +321,22 @@ mod tests {
         let mut revoked_session = session.clone();
         revoked_session.revoked = true;
         assert!(!SessionManager::is_session_valid(&revoked_session));
+    }
+
+    #[test]
+    fn test_hash_refresh_token() {
+        // Test that hashing is deterministic
+        let token = "test_refresh_token_12345";
+        let hash1 = hash_refresh_token(token);
+        let hash2 = hash_refresh_token(token);
+        assert_eq!(hash1, hash2, "Same token should produce same hash");
+
+        // Test that different tokens produce different hashes
+        let different_token = "different_token_67890";
+        let hash3 = hash_refresh_token(different_token);
+        assert_ne!(hash1, hash3, "Different tokens should produce different hashes");
+
+        // Test hash format (SHA-256 produces 64 hex characters)
+        assert_eq!(hash1.len(), 64, "SHA-256 hash should be 64 hex characters");
     }
 }

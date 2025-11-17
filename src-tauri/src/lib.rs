@@ -86,25 +86,25 @@ pub fn run() {
                 tracing::warn!("Failed to initialize Redis: {}. Continuing without caching.", e);
             }
 
-            tauri::async_runtime::spawn(async move {
-                match database::create_pool().await {
-                    Ok(pool) => {
-                        database::connection::initialize_pool(pool).await;
-                        tracing::info!("Database initialized successfully");
+            // Initialize database synchronously to prevent race conditions with command handlers
+            // This ensures the database pool is ready before any commands can be invoked
+            match database::create_pool().await {
+                Ok(pool) => {
+                    database::connection::initialize_pool(pool).await;
+                    tracing::info!("Database initialized successfully");
 
-                        if let Ok(pool) = database::get_pool_ref() {
-                            if let Err(e) = database::migrations::run_migrations(pool.as_ref()).await {
-                                tracing::error!("Failed to run migrations: {}", e);
-                            } else {
-                                tracing::info!("Migrations completed successfully");
-                            }
+                    if let Ok(pool_ref) = database::get_pool_ref() {
+                        if let Err(e) = database::migrations::run_migrations(pool_ref.as_ref()).await {
+                            tracing::error!("Failed to run migrations: {}", e);
+                        } else {
+                            tracing::info!("Migrations completed successfully");
                         }
                     }
-                    Err(e) => {
-                        tracing::error!("Failed to initialize database: {}", e);
-                    }
                 }
-            });
+                Err(e) => {
+                    tracing::error!("Failed to initialize database: {}", e);
+                }
+            }
 
             let rate_limiter_cleanup = rate_limiter.clone();
             tauri::async_runtime::spawn(async move {
