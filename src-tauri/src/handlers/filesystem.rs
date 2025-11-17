@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use directories::ProjectDirs;
 use dunce::canonicalize;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::env;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
@@ -15,7 +16,9 @@ const APP_ORGANIZATION: &str = "tavuc";
 const APP_NAME: &str = "tavuc-boilerplate";
 
 /// File or directory metadata information.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct FileInfo {
     pub name: String,
     pub path: String,
@@ -27,7 +30,9 @@ pub struct FileInfo {
 }
 
 /// Directory contents listing with metadata.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct DirectoryListing {
     pub path: String,
     pub entries: Vec<FileInfo>,

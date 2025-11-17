@@ -54,6 +54,7 @@
     "test:desktop": "node scripts/ez-test.mjs desktop",
     "test:e2e": "node scripts/ez-test.mjs e2e",
     "typecheck": "tsc --noEmit",
+    "generate:types": "cd src-tauri && cargo run --bin export_types",
     "dev:tauri:e2e": "node scripts/run-tauri-dev.mjs",
     "tauri:test:build": "npm run build && cargo build --manifest-path src-tauri/Cargo.toml",
     "test:desktop:watch": "WDIO_LOG_LEVEL=silent wdio run wdio.config.ts --watch",

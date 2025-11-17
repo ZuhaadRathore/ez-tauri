@@ -4,14 +4,16 @@ use crate::logging::{config::AppLogConfig, LogEntry, LogLevel};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, error, info};
 
 /// Query parameters for filtering log entries.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct LogQueryParams {
     pub level: Option<String>,
     pub start_time: Option<DateTime<Utc>>,
@@ -23,8 +25,9 @@ pub struct LogQueryParams {
 }
 
 /// Response structure for log queries with pagination info.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct LogResponse {
     pub logs: Vec<LogEntry>,
     pub total_count: usize,

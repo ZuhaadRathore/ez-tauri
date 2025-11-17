@@ -25,8 +25,9 @@ pub mod handlers;
 static LOG_INITIALIZED: Lazy<std::sync::Mutex<bool>> = Lazy::new(|| std::sync::Mutex::new(false));
 
 /// Log levels supported by the application.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub enum LogLevel {
     Error,
     Warn,
@@ -75,8 +76,9 @@ impl std::fmt::Display for LogLevel {
 }
 
 /// Structured log entry with metadata and context information.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct LogEntry {
     pub timestamp: DateTime<Utc>,
     pub level: String,

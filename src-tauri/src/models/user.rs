@@ -2,6 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -21,8 +22,9 @@ pub struct User {
 }
 
 /// User model safe for public API responses (excludes password hash).
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct PublicUser {
     pub id: Uuid,
     pub email: String,
@@ -34,8 +36,9 @@ pub struct PublicUser {
 }
 
 /// Request payload for creating a new user account.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct CreateUser {
     pub email: String,
     pub username: String,
@@ -45,8 +48,9 @@ pub struct CreateUser {
 }
 
 /// Request payload for updating existing user information.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct UpdateUser {
     pub email: Option<String>,
     pub username: Option<String>,
@@ -56,8 +60,9 @@ pub struct UpdateUser {
 }
 
 /// Request payload for user authentication.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
