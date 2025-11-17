@@ -259,10 +259,7 @@ pub async fn execute_command(command: String, args: Vec<String>) -> Result<Strin
         return Err("Command cannot be empty".to_string());
     }
 
-    if command
-        .chars()
-        .any(|ch| ch.is_whitespace() || ch == '/' || ch == '\\')
-    {
+    if command.chars().any(|ch| ch == '/' || ch == '\\') {
         return Err("Command contains invalid characters".to_string());
     }
 
