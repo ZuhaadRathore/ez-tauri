@@ -8,6 +8,7 @@ use crate::models::{CreateUser, PublicUser, User};
 use crate::validation::{validate_email, validate_optional_name, validate_username};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
+use tauri::State;
 use specta::Type;
 use std::env;
 use uuid::Uuid;
@@ -63,32 +64,12 @@ pub struct RefreshTokenResponse {
     pub expires_in: i64,
 }
 
-/// Get JWT service instance with secret from environment
-fn get_jwt_service() -> JwtService {
-    let secret = env::var("JWT_SECRET")
-        .expect("JWT_SECRET environment variable must be set. Generate a secure secret with: openssl rand -base64 32");
-
-    // Validate secret length for security
-    if secret.len() < 32 {
-        panic!("JWT_SECRET must be at least 32 characters long for security. Current length: {}", secret.len());
-    }
-
-    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(1); // Default to 1 hour for better security
-
-    let refresh_days = env::var("JWT_REFRESH_TOKEN_DAYS")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(30);
-
-    JwtService::with_expiry(secret, access_hours, refresh_days)
-}
-
 /// Register a new user account
 #[tauri::command]
-pub async fn auth_register(request: RegisterRequest) -> AppResult<LoginResponse> {
+pub async fn auth_register(
+    jwt_service: State<'_, JwtService>,
+    request: RegisterRequest,
+) -> AppResult<LoginResponse> {
     tracing::info!("Registration attempt for email: {}", request.email);
 
     let pool = get_pool_ref()
@@ -139,8 +120,7 @@ pub async fn auth_register(request: RegisterRequest) -> AppResult<LoginResponse>
         }
     })?;
 
-    // Generate tokens
-    let jwt_service = get_jwt_service();
+    // Generate tokens using managed state
     let token_pair = jwt_service
         .generate_token_pair(user.id, &user.email)
         .map_err(|e| AppError::internal_error(format!("Token generation failed: {}", e)))?;
@@ -159,22 +139,20 @@ pub async fn auth_register(request: RegisterRequest) -> AppResult<LoginResponse>
 
     tracing::info!("User registered successfully: {}", user.id);
 
-    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
-        .ok()
-        .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(1);
-
     Ok(LoginResponse {
         access_token: token_pair.access_token,
         refresh_token: token_pair.refresh_token,
         user: PublicUser::from(user),
-        expires_in: access_hours * 3600, // Convert hours to seconds
+        expires_in: jwt_service.access_token_expiry_hours() * 3600, // Convert hours to seconds
     })
 }
 
 /// Authenticate a user and return tokens
 #[tauri::command]
-pub async fn auth_login(request: LoginRequest) -> AppResult<LoginResponse> {
+pub async fn auth_login(
+    jwt_service: State<'_, JwtService>,
+    request: LoginRequest,
+) -> AppResult<LoginResponse> {
     tracing::info!("Login attempt for user: {}", request.email);
 
     let pool = get_pool_ref()
@@ -212,8 +190,7 @@ pub async fn auth_login(request: LoginRequest) -> AppResult<LoginResponse> {
         return Err(AppError::unauthorized("Invalid email or password"));
     }
 
-    // Generate tokens
-    let jwt_service = get_jwt_service();
+    // Generate tokens using managed state
     let token_pair = jwt_service
         .generate_token_pair(user.id, &user.email)
         .map_err(|e| AppError::internal_error(format!("Token generation failed: {}", e)))?;
@@ -232,29 +209,26 @@ pub async fn auth_login(request: LoginRequest) -> AppResult<LoginResponse> {
 
     tracing::info!("User logged in successfully: {}", user.id);
 
-    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
-        .ok()
-        .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(1);
-
     Ok(LoginResponse {
         access_token: token_pair.access_token,
         refresh_token: token_pair.refresh_token,
         user: PublicUser::from(user),
-        expires_in: access_hours * 3600, // Convert hours to seconds
+        expires_in: jwt_service.access_token_expiry_hours() * 3600, // Convert hours to seconds
     })
 }
 
 /// Refresh access token using refresh token
 #[tauri::command]
-pub async fn auth_refresh_token(request: RefreshTokenRequest) -> AppResult<RefreshTokenResponse> {
+pub async fn auth_refresh_token(
+    jwt_service: State<'_, JwtService>,
+    request: RefreshTokenRequest,
+) -> AppResult<RefreshTokenResponse> {
     tracing::debug!("Token refresh attempt");
 
     let pool = get_pool_ref()
         .into_app_error(ErrorCode::DatabaseConnection)?;
 
-    // Validate refresh token
-    let jwt_service = get_jwt_service();
+    // Validate refresh token using managed state
     let claims = jwt_service
         .validate_refresh_token(&request.refresh_token)
         .map_err(|e| match e {
@@ -295,15 +269,10 @@ pub async fn auth_refresh_token(request: RefreshTokenRequest) -> AppResult<Refre
 
     tracing::debug!("Token refreshed successfully for user: {}", user_id);
 
-    let access_hours = env::var("JWT_ACCESS_TOKEN_HOURS")
-        .ok()
-        .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(1);
-
     Ok(RefreshTokenResponse {
         access_token,
         refresh_token: request.refresh_token, // Return same refresh token
-        expires_in: access_hours * 3600,      // Convert hours to seconds
+        expires_in: jwt_service.access_token_expiry_hours() * 3600, // Convert hours to seconds
     })
 }
 
@@ -326,14 +295,16 @@ pub async fn auth_logout(refresh_token: String) -> AppResult<()> {
 
 /// Logout from all devices (revoke all sessions)
 #[tauri::command]
-pub async fn auth_logout_all(access_token: String) -> AppResult<()> {
+pub async fn auth_logout_all(
+    jwt_service: State<'_, JwtService>,
+    access_token: String,
+) -> AppResult<()> {
     tracing::info!("Logout all devices attempt");
 
     let pool = get_pool_ref()
         .into_app_error(ErrorCode::DatabaseConnection)?;
 
-    // Validate access token and get user ID
-    let jwt_service = get_jwt_service();
+    // Validate access token and get user ID using managed state
     let claims = jwt_service
         .validate_access_token(&access_token)
         .map_err(|_| AppError::unauthorized("Invalid access token"))?;
@@ -352,12 +323,14 @@ pub async fn auth_logout_all(access_token: String) -> AppResult<()> {
 
 /// Check if access token is valid
 #[tauri::command]
-pub async fn auth_verify_token(access_token: String) -> AppResult<PublicUser> {
+pub async fn auth_verify_token(
+    jwt_service: State<'_, JwtService>,
+    access_token: String,
+) -> AppResult<PublicUser> {
     let pool = get_pool_ref()
         .into_app_error(ErrorCode::DatabaseConnection)?;
 
-    // Validate token
-    let jwt_service = get_jwt_service();
+    // Validate token using managed state
     let claims = jwt_service
         .validate_access_token(&access_token)
         .map_err(|e| match e {
@@ -387,12 +360,14 @@ pub async fn auth_verify_token(access_token: String) -> AppResult<PublicUser> {
 
 /// Get all active sessions for the current user
 #[tauri::command]
-pub async fn auth_get_sessions(access_token: String) -> AppResult<Vec<SessionInfo>> {
+pub async fn auth_get_sessions(
+    jwt_service: State<'_, JwtService>,
+    access_token: String,
+) -> AppResult<Vec<SessionInfo>> {
     let pool = get_pool_ref()
         .into_app_error(ErrorCode::DatabaseConnection)?;
 
-    // Validate token and get user ID
-    let jwt_service = get_jwt_service();
+    // Validate token and get user ID using managed state
     let claims = jwt_service
         .validate_access_token(&access_token)
         .map_err(|_| AppError::unauthorized("Invalid access token"))?;
@@ -410,12 +385,15 @@ pub async fn auth_get_sessions(access_token: String) -> AppResult<Vec<SessionInf
 
 /// Revoke a specific session by ID
 #[tauri::command]
-pub async fn auth_revoke_session(access_token: String, session_id: String) -> AppResult<()> {
+pub async fn auth_revoke_session(
+    jwt_service: State<'_, JwtService>,
+    access_token: String,
+    session_id: String,
+) -> AppResult<()> {
     let pool = get_pool_ref()
         .into_app_error(ErrorCode::DatabaseConnection)?;
 
-    // Validate token and get user ID
-    let jwt_service = get_jwt_service();
+    // Validate token and get user ID using managed state
     let claims = jwt_service
         .validate_access_token(&access_token)
         .map_err(|_| AppError::unauthorized("Invalid access token"))?;
@@ -451,7 +429,7 @@ mod tests {
 
     #[test]
     fn test_jwt_service_creation() {
-        let service = get_jwt_service();
+        let service = JwtService::new("test-secret-key-min-32-chars!!".to_string());
         let user_id = Uuid::new_v4();
         let email = "test@example.com";
 

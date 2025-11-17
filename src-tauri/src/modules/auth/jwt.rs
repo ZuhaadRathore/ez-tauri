@@ -161,6 +161,16 @@ impl JwtService {
             .ok()
             .map(|claims| claims.sub)
     }
+
+    /// Get the access token expiry in hours
+    pub fn access_token_expiry_hours(&self) -> i64 {
+        self.access_token_expiry_hours
+    }
+
+    /// Get the refresh token expiry in days
+    pub fn refresh_token_expiry_days(&self) -> i64 {
+        self.refresh_token_expiry_days
+    }
 }
 
 /// Token pair containing access and refresh tokens

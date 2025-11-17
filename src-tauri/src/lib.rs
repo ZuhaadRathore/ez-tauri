@@ -17,6 +17,7 @@ mod validation;
 pub mod modules;
 use config::AppConfig;
 use handlers::*;
+use modules::auth::jwt::JwtService;
 use rate_limiter::RateLimiterConfig;
 use std::sync::Arc;
 use tauri::Manager;
@@ -70,6 +71,29 @@ pub fn run() {
             if let Err(e) = AppConfig::validate_production_config() {
                 panic!("Configuration validation failed: {}", e);
             }
+
+            // Initialize JWT service once from environment variables
+            let jwt_secret = std::env::var("JWT_SECRET")
+                .expect("JWT_SECRET environment variable must be set. Generate a secure secret with: openssl rand -base64 32");
+
+            // Validate secret length for security (already validated in config, but double-check)
+            if jwt_secret.len() < 32 {
+                panic!("JWT_SECRET must be at least 32 characters long for security. Current length: {}", jwt_secret.len());
+            }
+
+            let access_hours = std::env::var("JWT_ACCESS_TOKEN_HOURS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(1); // Default to 1 hour for better security
+
+            let refresh_days = std::env::var("JWT_REFRESH_TOKEN_DAYS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(30);
+
+            let jwt_service = JwtService::with_expiry(jwt_secret, access_hours, refresh_days);
+            app.manage(jwt_service);
+            tracing::info!("JWT service initialized successfully with access_hours={}, refresh_days={}", access_hours, refresh_days);
 
             let rate_limiter = Arc::new(RateLimiterConfig::new());
             app.manage(rate_limiter.clone());
