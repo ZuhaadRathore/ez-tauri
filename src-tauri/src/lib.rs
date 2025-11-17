@@ -2,9 +2,9 @@
 //! rate limiting, caching, and secure user authentication.
 
 pub mod stronghold;
-mod cache;
-mod config;
-mod database;
+pub mod cache;
+pub mod config;
+pub mod database;
 mod errors;
 pub mod handlers;
 mod logging;
@@ -15,7 +15,9 @@ mod rate_limiter_test;
 mod validation;
 
 pub mod modules;
+use cache::RedisCache;
 use config::AppConfig;
+use database::Database;
 use handlers::*;
 use modules::auth::jwt::JwtService;
 use rate_limiter::RateLimiterConfig;
@@ -64,6 +66,14 @@ pub fn run() {
             output.to_vec()
         }).build())
         .setup(|app| {
+            // Initialize logging early
+            if let Err(e) = logging::init_logging_from_env() {
+                eprintln!("Failed to initialize logging: {}", e);
+            } else {
+                tracing::info!("Logging system initialized successfully");
+            }
+
+            // Load configuration once and manage as state
             let config = AppConfig::from_env();
             tracing::info!("App environment: {:?}", config.environment);
 
@@ -99,54 +109,48 @@ pub fn run() {
             app.manage(rate_limiter.clone());
             tracing::info!("Rate limiter initialized successfully");
 
+            // Initialize Redis cache and manage as state
+            let redis_cache = RedisCache::new(config.redis_url.clone());
+            app.manage(redis_cache);
 
-            if let Err(e) = logging::init_logging_from_env() {
-                eprintln!("Failed to initialize logging: {}", e);
-            } else {
-                tracing::info!("Logging system initialized successfully");
-            }
+            // Manage AppConfig as state for handlers that need it
+            app.manage(config.clone());
 
-            if let Err(e) = cache::initialize_redis() {
-                tracing::warn!("Failed to initialize Redis: {}. Continuing without caching.", e);
-            }
+            // Initialize database and manage as state
+            // Use tauri::async_runtime::block_on to handle async initialization in sync context
+            let db = tauri::async_runtime::block_on(async {
+                match database::create_pool().await {
+                    Ok(pool) => {
+                        tracing::info!("Database pool created successfully");
 
-            // Initialize database synchronously to prevent race conditions with command handlers
-            // This ensures the database pool is ready before any commands can be invoked
-            match database::create_pool().await {
-                Ok(pool) => {
-                    database::connection::initialize_pool(pool).await;
-                    tracing::info!("Database initialized successfully");
-
-                    if let Ok(pool_ref) = database::get_pool_ref() {
-                        if let Err(e) = database::migrations::run_migrations(pool_ref.as_ref()).await {
+                        // Run migrations
+                        if let Err(e) = database::migrations::run_migrations(&pool).await {
                             tracing::error!("Failed to run migrations: {}", e);
                         } else {
                             tracing::info!("Migrations completed successfully");
                         }
-                    }
-                }
-                Err(e) => {
-                    tracing::error!("Failed to initialize database: {}", e);
-                }
-            }
 
-            let rate_limiter_cleanup = rate_limiter.clone();
-            tauri::async_runtime::spawn(async move {
-                let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
-                loop {
-                    interval.tick().await;
-                    rate_limiter_cleanup.cleanup_old_limiters();
-                    tracing::debug!("Cleaned up old rate limiters");
+                        Some(Database::new(pool))
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to initialize database: {}", e);
+                        None
+                    }
                 }
             });
 
-            // Spawn background task for periodic session cleanup
-            tauri::async_runtime::spawn(async move {
-                let mut interval = tokio::time::interval(std::time::Duration::from_secs(86400)); // Run daily
-                loop {
-                    interval.tick().await;
-                    if let Ok(pool) = database::get_pool_ref() {
-                        match modules::auth::session::SessionManager::cleanup_expired_sessions(pool.as_ref()).await {
+            // Only manage database if initialization succeeded
+            if let Some(database) = db {
+                let db_for_cleanup = database.clone();
+                app.manage(database);
+                tracing::info!("Database initialized successfully");
+
+                // Spawn background task for periodic session cleanup
+                tauri::async_runtime::spawn(async move {
+                    let mut interval = tokio::time::interval(std::time::Duration::from_secs(86400)); // Run daily
+                    loop {
+                        interval.tick().await;
+                        match modules::auth::session::SessionManager::cleanup_expired_sessions(db_for_cleanup.pool()).await {
                             Ok(count) => {
                                 tracing::info!("Session cleanup: removed {} expired sessions", count);
                             }
@@ -154,9 +158,20 @@ pub fn run() {
                                 tracing::error!("Failed to cleanup expired sessions: {}", e);
                             }
                         }
-                    } else {
-                        tracing::warn!("Database not initialized, skipping session cleanup");
                     }
+                });
+            } else {
+                panic!("Failed to initialize database - cannot continue");
+            }
+
+            // Rate limiter cleanup task
+            let rate_limiter_cleanup = rate_limiter.clone();
+            tauri::async_runtime::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
+                loop {
+                    interval.tick().await;
+                    rate_limiter_cleanup.cleanup_old_limiters();
+                    tracing::debug!("Cleaned up old rate limiters");
                 }
             });
 

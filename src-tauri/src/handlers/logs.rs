@@ -1,14 +1,15 @@
 //! Application log management command handlers.
 
-use crate::database::get_pool_ref;
+use crate::database::Database;
 use crate::models::{AppLog, CreateAppLog, LogQuery};
 use crate::validation::{validate_log_level, validate_log_message};
 use sqlx::QueryBuilder;
+use tauri::State;
 
 /// Creates a new application log entry in the database.
 #[tauri::command]
-pub async fn create_log(log_data: CreateAppLog) -> Result<AppLog, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn create_log(db: State<'_, Database>, log_data: CreateAppLog) -> Result<AppLog, String> {
+    let pool = db.pool();
 
     let level = validate_log_level(&log_data.level).map_err(|e| format!("Invalid log level: {}", e))?;
     let message = validate_log_message(&log_data.message).map_err(|e| format!("Invalid log message: {}", e))?;
@@ -30,7 +31,7 @@ pub async fn create_log(log_data: CreateAppLog) -> Result<AppLog, String> {
     .bind(message)
     .bind(metadata)
     .bind(log_data.user_id)
-    .fetch_one(pool.as_ref())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Failed to create log: {}", e))?;
 
@@ -38,8 +39,8 @@ pub async fn create_log(log_data: CreateAppLog) -> Result<AppLog, String> {
 }
 
 #[tauri::command]
-pub async fn get_logs(query: LogQuery) -> Result<Vec<AppLog>, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn get_logs(db: State<'_, Database>, query: LogQuery) -> Result<Vec<AppLog>, String> {
+    let pool = db.pool();
 
     let LogQuery {
         level,
@@ -85,7 +86,7 @@ pub async fn get_logs(query: LogQuery) -> Result<Vec<AppLog>, String> {
 
     let logs = builder
         .build_query_as::<AppLog>()
-        .fetch_all(pool.as_ref())
+        .fetch_all(pool)
         .await
         .map_err(|e| format!("Failed to fetch logs: {}", e))?;
 
@@ -93,8 +94,8 @@ pub async fn get_logs(query: LogQuery) -> Result<Vec<AppLog>, String> {
 }
 
 #[tauri::command]
-pub async fn delete_old_logs(days_old: i32) -> Result<String, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn delete_old_logs(db: State<'_, Database>, days_old: i32) -> Result<String, String> {
+    let pool = db.pool();
 
     let result = sqlx::query(
         r#"
@@ -103,7 +104,7 @@ pub async fn delete_old_logs(days_old: i32) -> Result<String, String> {
         "#,
     )
     .bind(days_old)
-    .execute(pool.as_ref())
+    .execute(pool)
     .await
     .map_err(|e| format!("Failed to delete old logs: {}", e))?;
 

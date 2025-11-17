@@ -1,15 +1,16 @@
 //! User management command handlers.
 
-use crate::database::get_pool_ref;
+use crate::database::Database;
 use crate::models::{CreateUser, LoginRequest, PublicUser, UpdateUser, User};
 use crate::validation::{validate_email, validate_username, validate_optional_name};
 use bcrypt::{hash, verify, DEFAULT_COST};
+use tauri::State;
 use uuid::Uuid;
 
 /// Retrieves all users from the database (excluding password hashes).
 #[tauri::command]
-pub async fn get_all_users() -> Result<Vec<PublicUser>, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn get_all_users(db: State<'_, Database>) -> Result<Vec<PublicUser>, String> {
+    let pool = db.pool();
 
     let users: Vec<User> = sqlx::query_as::<_, User>(
         r#"
@@ -26,7 +27,7 @@ pub async fn get_all_users() -> Result<Vec<PublicUser>, String> {
         ORDER BY created_at DESC
         "#,
     )
-    .fetch_all(pool.as_ref())
+    .fetch_all(pool)
     .await
     .map_err(|e| format!("Failed to fetch users: {}", e))?;
 
@@ -35,8 +36,8 @@ pub async fn get_all_users() -> Result<Vec<PublicUser>, String> {
 
 /// Retrieves a specific user by their UUID.
 #[tauri::command]
-pub async fn get_user_by_id(user_id: String) -> Result<Option<PublicUser>, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn get_user_by_id(db: State<'_, Database>, user_id: String) -> Result<Option<PublicUser>, String> {
+    let pool = db.pool();
     let uuid = Uuid::parse_str(&user_id).map_err(|e| format!("Invalid UUID: {}", e))?;
 
     let user = sqlx::query_as::<_, User>(
@@ -55,7 +56,7 @@ pub async fn get_user_by_id(user_id: String) -> Result<Option<PublicUser>, Strin
         "#,
     )
     .bind(uuid)
-    .fetch_optional(pool.as_ref())
+    .fetch_optional(pool)
     .await
     .map_err(|e| format!("Failed to fetch user: {}", e))?;
 
@@ -64,8 +65,8 @@ pub async fn get_user_by_id(user_id: String) -> Result<Option<PublicUser>, Strin
 
 /// Creates a new user account with validation and password hashing.
 #[tauri::command]
-pub async fn create_user(user_data: CreateUser) -> Result<PublicUser, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn create_user(db: State<'_, Database>, user_data: CreateUser) -> Result<PublicUser, String> {
+    let pool = db.pool();
     let CreateUser {
         email,
         username,
@@ -102,7 +103,7 @@ pub async fn create_user(user_data: CreateUser) -> Result<PublicUser, String> {
     .bind(password_hash)
     .bind(first_name)
     .bind(last_name)
-    .fetch_one(pool.as_ref())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Failed to create user: {}", e))?;
 
@@ -110,8 +111,8 @@ pub async fn create_user(user_data: CreateUser) -> Result<PublicUser, String> {
 }
 
 #[tauri::command]
-pub async fn update_user(user_id: String, user_data: UpdateUser) -> Result<PublicUser, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn update_user(db: State<'_, Database>, user_id: String, user_data: UpdateUser) -> Result<PublicUser, String> {
+    let pool = db.pool();
     let uuid = Uuid::parse_str(&user_id).map_err(|e| format!("Invalid UUID: {}", e))?;
     let UpdateUser {
         email,
@@ -160,7 +161,7 @@ pub async fn update_user(user_id: String, user_data: UpdateUser) -> Result<Publi
     .bind(first_name)
     .bind(last_name)
     .bind(is_active)
-    .fetch_one(pool.as_ref())
+    .fetch_one(pool)
     .await
     .map_err(|e| format!("Failed to update user: {}", e))?;
 
@@ -168,13 +169,13 @@ pub async fn update_user(user_id: String, user_data: UpdateUser) -> Result<Publi
 }
 
 #[tauri::command]
-pub async fn delete_user(user_id: String) -> Result<String, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn delete_user(db: State<'_, Database>, user_id: String) -> Result<String, String> {
+    let pool = db.pool();
     let uuid = Uuid::parse_str(&user_id).map_err(|e| format!("Invalid UUID: {}", e))?;
 
     let result = sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(uuid)
-        .execute(pool.as_ref())
+        .execute(pool)
         .await
         .map_err(|e| format!("Failed to delete user: {}", e))?;
 
@@ -186,8 +187,8 @@ pub async fn delete_user(user_id: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn authenticate_user(login_data: LoginRequest) -> Result<Option<PublicUser>, String> {
-    let pool = get_pool_ref().map_err(|e| e.to_string())?;
+pub async fn authenticate_user(db: State<'_, Database>, login_data: LoginRequest) -> Result<Option<PublicUser>, String> {
+    let pool = db.pool();
     let LoginRequest { email, password } = login_data;
 
     // Validate email input
@@ -211,7 +212,7 @@ pub async fn authenticate_user(login_data: LoginRequest) -> Result<Option<Public
         "#,
     )
     .bind(&email)
-    .fetch_optional(pool.as_ref())
+    .fetch_optional(pool)
     .await
     .map_err(|e| format!("Failed to authenticate user: {}", e))?;
 

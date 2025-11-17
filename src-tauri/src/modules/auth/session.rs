@@ -1,6 +1,5 @@
 //! Session management for authentication
 
-use crate::database::get_pool_ref;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use specta::Type;
