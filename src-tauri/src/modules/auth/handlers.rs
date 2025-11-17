@@ -8,12 +8,14 @@ use crate::models::{CreateUser, PublicUser, User};
 use crate::validation::{validate_email, validate_optional_name, validate_username};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::env;
 use uuid::Uuid;
 
 /// Login request structure
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
@@ -21,8 +23,9 @@ pub struct LoginRequest {
 }
 
 /// Login response with tokens
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct LoginResponse {
     pub access_token: String,
     pub refresh_token: String,
@@ -31,8 +34,9 @@ pub struct LoginResponse {
 }
 
 /// Registration request
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct RegisterRequest {
     pub email: String,
     pub username: String,
@@ -42,15 +46,17 @@ pub struct RegisterRequest {
 }
 
 /// Token refresh request
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }
 
 /// Token refresh response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct RefreshTokenResponse {
     pub access_token: String,
     pub refresh_token: String,

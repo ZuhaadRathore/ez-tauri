@@ -3,6 +3,7 @@
 use crate::database::get_pool_ref;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -263,7 +264,9 @@ pub enum SessionError {
 }
 
 /// Public session info (without sensitive data)
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct SessionInfo {
     pub id: String,
     pub device_info: Option<String>,
