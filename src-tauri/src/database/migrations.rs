@@ -244,8 +244,19 @@ mod tests {
         .await;
 
         assert!(result.is_err());
-        let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("foreign key constraint") || error_msg.contains("violates"));
+
+        // Check for foreign key violation using proper SQLx error types
+        let err = result.unwrap_err();
+        if let sqlx::Error::Database(db_err) = &err {
+            if let Some(pg_err) = db_err.downcast_ref::<sqlx::postgres::PgDatabaseError>() {
+                // PostgreSQL error code 23503 = foreign_key_violation
+                assert_eq!(pg_err.code(), "23503", "Expected foreign key violation error");
+            } else {
+                panic!("Expected PostgreSQL database error, got: {}", err);
+            }
+        } else {
+            panic!("Expected database error, got: {}", err);
+        }
 
         Ok(())
     }

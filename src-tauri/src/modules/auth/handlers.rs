@@ -126,11 +126,16 @@ pub async fn auth_register(request: RegisterRequest) -> AppResult<LoginResponse>
     .fetch_one(pool.as_ref())
     .await
     .map_err(|e| {
-        if e.to_string().contains("unique") {
-            AppError::validation_error("Email or username already exists")
-        } else {
-            AppError::database_error(format!("Failed to create user: {}", e))
+        // Check for unique constraint violation using proper SQLx error types
+        if let sqlx::Error::Database(db_err) = &e {
+            if let Some(pg_err) = db_err.downcast_ref::<sqlx::postgres::PgDatabaseError>() {
+                // PostgreSQL error code 23505 = unique_violation
+                if pg_err.code() == "23505" {
+                    return AppError::validation_error("Email or username already exists");
+                }
+            }
         }
+        AppError::database_error(format!("Failed to create user: {}", e))
     })?;
 
     // Generate tokens
