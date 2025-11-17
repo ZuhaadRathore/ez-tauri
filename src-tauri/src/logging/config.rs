@@ -1,14 +1,16 @@
 //! Logging configuration structures and management.
 
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::path::PathBuf;
 use tracing_appender::rolling::Rotation;
 
 use super::LogLevel;
 
 /// Main logging configuration structure.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct AppLogConfig {
     pub enabled: bool,
     pub level: LogLevel,
@@ -18,8 +20,9 @@ pub struct AppLogConfig {
 }
 
 /// Configuration for console logging output.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct ConsoleLogConfig {
     pub enabled: bool,
     pub format: LogFormat,
@@ -27,8 +30,9 @@ pub struct ConsoleLogConfig {
 }
 
 /// Configuration for file logging with rotation settings.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct FileLogConfig {
     pub enabled: bool,
     pub directory: String,
@@ -39,8 +43,9 @@ pub struct FileLogConfig {
 }
 
 /// Configuration for structured logging features.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct StructuredLogConfig {
     pub enabled: bool,
     pub include_spans: bool,
@@ -50,8 +55,9 @@ pub struct StructuredLogConfig {
 }
 
 /// Available log output formats.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub enum LogFormat {
     Pretty,
     Compact,
@@ -60,8 +66,9 @@ pub enum LogFormat {
 }
 
 /// Log file rotation intervals.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub enum LogRotation {
     Never,
     Minutely,

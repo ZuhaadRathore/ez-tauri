@@ -364,8 +364,11 @@ pub async fn rl_greet(
 
 /// Rate limiter status information
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct RateLimiterStatus {
     pub active: bool,
     pub global_limit_per_minute: u32,

@@ -4,10 +4,12 @@ use crate::database::{get_pool_ref, test_connection};
 use crate::errors::{AppError, AppResult, ErrorCode, IntoAppError};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
 /// Database connection status information.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+#[specta(rename_all = "camelCase")]
 pub struct DatabaseStatus {
     pub connected: bool,
     pub database_name: Option<String>,
