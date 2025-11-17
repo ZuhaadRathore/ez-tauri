@@ -1,5 +1,6 @@
 -- Create sessions table for JWT refresh token management
--- This table stores user sessions with refresh tokens for authentication
+-- This table stores user sessions with hashed refresh tokens for authentication
+-- Note: Refresh tokens are hashed using SHA-256 before storage for security
 
 CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -26,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_revoked ON sessions(revoked) WHERE revok
 CREATE INDEX IF NOT EXISTS idx_sessions_cleanup ON sessions(expires_at, last_used_at) WHERE revoked = true;
 
 -- Add comment for documentation
-COMMENT ON TABLE sessions IS 'Stores user authentication sessions with refresh tokens';
-COMMENT ON COLUMN sessions.refresh_token IS 'JWT refresh token for obtaining new access tokens';
+COMMENT ON TABLE sessions IS 'Stores user authentication sessions with hashed refresh tokens';
+COMMENT ON COLUMN sessions.refresh_token IS 'SHA-256 hash of JWT refresh token for obtaining new access tokens (not stored in plaintext)';
 COMMENT ON COLUMN sessions.device_info IS 'Information about the device/client that created this session';
 COMMENT ON COLUMN sessions.revoked IS 'Whether this session has been manually revoked';
